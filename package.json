@@ -1,0 +1,31 @@
+{
+  "name": "adaptive-palette",
+  "version": "0.1.0",
+  "description": "Generate readable semantic UI color tokens from any background color.",
+  "type": "module",
+  "main": "./src/adaptive-palette.js",
+  "exports": {
+    ".": "./src/adaptive-palette.js"
+  },
+  "files": [
+    "src",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "npm run check",
+    "dev": "python3 -m http.server 4173 --bind 127.0.0.1",
+    "test": "node --test",
+    "check": "node --check src/adaptive-palette.js && node --check examples/dashboard/app.js"
+  },
+  "keywords": [
+    "color",
+    "accessibility",
+    "wcag",
+    "dark-mode",
+    "design-tokens",
+    "data-visualization"
+  ],
+  "license": "MIT"
+}

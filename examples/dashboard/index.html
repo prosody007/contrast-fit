@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Adaptive Palette Dashboard Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="dashboard">
+      <header class="dashboard__header">
+        <div>
+          <p class="dashboard__eyebrow">Open source demo</p>
+          <h1>Adaptive Palette</h1>
+          <p>Generate readable UI tokens from any background color.</p>
+        </div>
+        <a class="github-link" href="../../README.md">Docs</a>
+      </header>
+
+      <section class="cards" aria-label="Adaptive palette examples">
+        <article class="chart-card js-adaptive-card" data-bg="#2B3548" data-offset="0">
+          <header class="chart-card__header">
+            <div>
+              <p class="chart-card__eyebrow">Enterprise pipeline</p>
+              <h2>North America expansion</h2>
+            </div>
+            <div class="card-controls">
+              <input class="js-bg-picker color-picker" type="color" value="#2B3548" aria-label="Background color" />
+              <input class="js-bg-hex hex-input" type="text" value="#2B3548" aria-label="Background hex color" />
+            </div>
+          </header>
+
+          <div class="metrics">
+            <div class="metric">
+              <span>ARR forecast</span>
+              <strong>$18.4M</strong>
+              <em class="tag tag--good">+12.8%</em>
+            </div>
+            <div class="metric">
+              <span>Qualified leads</span>
+              <strong>4,832</strong>
+              <em class="tag tag--good">+8.4%</em>
+            </div>
+            <div class="metric">
+              <span>Sales cycle</span>
+              <strong>42d</strong>
+              <em class="tag tag--warn">+3d</em>
+            </div>
+            <div class="metric">
+              <span>Net retention</span>
+              <strong>118%</strong>
+              <em class="tag tag--good">+4.1%</em>
+            </div>
+          </div>
+
+          <section class="palette-bar" aria-label="Generated palette">
+            <div>
+              <p>Computed palette</p>
+              <strong class="js-bg-label">#2B3548</strong>
+            </div>
+            <div class="swatches js-swatches"></div>
+          </section>
+
+          <svg class="plot js-plot" viewBox="0 0 760 430" role="img" aria-label="Pipeline trend chart"></svg>
+
+          <footer class="legend">
+            <span><i class="legend-dot legend-dot--a"></i>Revenue</span>
+            <span><i class="legend-dot legend-dot--b"></i>Activation</span>
+            <span><i class="legend-dot legend-dot--c"></i>Expansion</span>
+          </footer>
+        </article>
+
+        <article class="chart-card js-adaptive-card" data-bg="#F5F7F9" data-offset="7">
+          <header class="chart-card__header">
+            <div>
+              <p class="chart-card__eyebrow">Product adoption</p>
+              <h2>iOS feature velocity</h2>
+            </div>
+            <div class="card-controls">
+              <input class="js-bg-picker color-picker" type="color" value="#F5F7F9" aria-label="Background color" />
+              <input class="js-bg-hex hex-input" type="text" value="#F5F7F9" aria-label="Background hex color" />
+            </div>
+          </header>
+
+          <div class="metrics">
+            <div class="metric">
+              <span>Weekly active</span>
+              <strong>624K</strong>
+              <em class="tag tag--good">+9.6%</em>
+            </div>
+            <div class="metric">
+              <span>Solver starts</span>
+              <strong>91K</strong>
+              <em class="tag tag--good">+14.2%</em>
+            </div>
+            <div class="metric">
+              <span>Crash rate</span>
+              <strong>0.18%</strong>
+              <em class="tag tag--good">-0.04%</em>
+            </div>
+            <div class="metric">
+              <span>p95 latency</span>
+              <strong>382ms</strong>
+              <em class="tag tag--warn">+21ms</em>
+            </div>
+          </div>
+
+          <section class="palette-bar" aria-label="Generated palette">
+            <div>
+              <p>Computed palette</p>
+              <strong class="js-bg-label">#F5F7F9</strong>
+            </div>
+            <div class="swatches js-swatches"></div>
+          </section>
+
+          <svg class="plot js-plot" viewBox="0 0 760 430" role="img" aria-label="Product adoption chart"></svg>
+
+          <footer class="legend">
+            <span><i class="legend-dot legend-dot--a"></i>Usage</span>
+            <span><i class="legend-dot legend-dot--b"></i>Solver</span>
+            <span><i class="legend-dot legend-dot--c"></i>Quality</span>
+          </footer>
+        </article>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
