@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Adaptive Palette Docs</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="docs">
+      <nav class="topbar" aria-label="Documentation navigation">
+        <a class="brand" href="../examples/dashboard/">Adaptive Palette</a>
+        <a class="button" href="../examples/dashboard/">Open demo</a>
+      </nav>
+
+      <header class="hero">
+        <p class="eyebrow">Documentation</p>
+        <h1>Generate readable UI colors from one background.</h1>
+        <p>
+          Adaptive Palette is a small, framework-agnostic color engine for AI-generated dashboards,
+          charts, cards, and dynamic UI surfaces.
+        </p>
+      </header>
+
+      <section class="section">
+        <h2>What It Solves</h2>
+        <div class="grid">
+          <article>
+            <h3>Low contrast output</h3>
+            <p>Generated UI often ships with text and chart lines that disappear on dark or light backgrounds.</p>
+          </article>
+          <article>
+            <h3>Theme maintenance cost</h3>
+            <p>Instead of manually maintaining separate light and dark palettes, provide one base color.</p>
+          </article>
+          <article>
+            <h3>Unstable generated visuals</h3>
+            <p>The same algorithm produces deterministic semantic tokens for text, borders, charts, and status tags.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Usage</h2>
+        <pre><code>import {
+  applyPaletteToElement,
+  createAdaptivePalette,
+} from "./src/adaptive-palette.js";
+
+const card = document.querySelector(".card");
+const palette = createAdaptivePalette("#2B3548");
+
+applyPaletteToElement(card, palette);</code></pre>
+      </section>
+
+      <section class="section">
+        <h2>Generated Tokens</h2>
+        <ul class="token-list">
+          <li><code>--adaptive-bg</code></li>
+          <li><code>--adaptive-text</code></li>
+          <li><code>--adaptive-muted</code></li>
+          <li><code>--adaptive-border</code></li>
+          <li><code>--adaptive-grid</code></li>
+          <li><code>--adaptive-axis</code></li>
+          <li><code>--adaptive-series-a</code></li>
+          <li><code>--adaptive-series-b</code></li>
+          <li><code>--adaptive-series-c</code></li>
+          <li><code>--adaptive-good-bg</code></li>
+          <li><code>--adaptive-warn-bg</code></li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>How It Works</h2>
+        <p>
+          The engine uses WCAG relative luminance and contrast ratio calculations. It chooses a readable
+          direction, mixes colors from the background toward that direction, adjusts chart accents until
+          they meet the target contrast, then exports the results as CSS custom properties.
+        </p>
+        <p>
+          It does not rely on <code>mix-blend-mode</code> as the primary strategy, because blend modes are
+          useful visual effects but cannot reliably guarantee readability for dense charts and small UI text.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Deploy</h2>
+        <p>This is a static project. On Vercel, use <code>npm run build</code>; the build creates the <code>public/</code> output directory.</p>
+      </section>
+    </main>
+  </body>
+</html>
