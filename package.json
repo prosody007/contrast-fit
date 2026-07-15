@@ -14,7 +14,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "npm run check",
+    "build": "npm run check && node scripts/build-static.mjs",
     "dev": "python3 -m http.server 4173 --bind 127.0.0.1",
     "test": "node --test",
     "check": "node --check src/adaptive-palette.js && node --check examples/dashboard/app.js"
