@@ -26,7 +26,7 @@ Then open:
 http://127.0.0.1:4173/
 ```
 
-The demo includes two dense chart cards. Change the background color input and the generated palette, chart, text, borders, and status colors update together.
+The demo includes two dense chart cards. Change the background color input and the chart, text, borders, and status colors update together.
 
 ## Usage
 

@@ -6,7 +6,7 @@ Adaptive Palette is intentionally small. The project is split into three layers:
    Framework-agnostic color computation. It accepts a background color and returns semantic color tokens, contrast metrics, and swatch metadata.
 
 2. `examples/dashboard/`
-   A plain HTML/CSS/JS demo that shows how generated tokens can drive dense charts, metrics, status tags, and palette previews.
+   A plain HTML/CSS/JS demo that shows how generated tokens can drive dense charts, metrics, and status tags.
 
 3. `index.html`
    A GitHub Pages friendly entry point that redirects to the dashboard example.

@@ -24,21 +24,6 @@ function pointsToPath(points) {
     .join(" ");
 }
 
-function renderSwatches(container, palette) {
-  container.replaceChildren();
-
-  palette.tokens.forEach((token) => {
-    const swatch = document.createElement("span");
-    const detail = token.contrast ? `${token.contrast.toFixed(2)}:1` : "derived";
-
-    swatch.className = "swatch";
-    swatch.style.background = token.swatch;
-    swatch.title = `${token.name}: ${token.value} (${detail})`;
-    swatch.setAttribute("aria-label", swatch.title);
-    container.append(swatch);
-  });
-}
-
 function renderChart(svg, offset = 0, id = "chart") {
   const width = 760;
   const left = 58;
@@ -137,10 +122,8 @@ function updateCard(card) {
   const palette = createAdaptivePalette(card.dataset.bg);
 
   applyPaletteToElement(card, palette);
-  card.querySelector(".js-bg-label").textContent = palette.background;
   card.querySelector(".js-bg-picker").value = palette.background;
   card.querySelector(".js-bg-hex").value = palette.background;
-  renderSwatches(card.querySelector(".js-swatches"), palette);
 }
 
 function bindCard(card, index) {
