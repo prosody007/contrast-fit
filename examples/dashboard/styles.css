@@ -58,18 +58,22 @@ input {
 }
 
 .github-link {
-  min-height: 34px;
+  width: 36px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(29, 41, 57, 0.12);
-  border-radius: 999px;
-  padding: 0 14px;
+  border-radius: 8px;
+  padding: 0;
   background: rgba(255, 255, 255, 0.72);
   color: #344054;
-  font-size: 13px;
-  font-weight: 700;
   text-decoration: none;
+}
+
+.github-link svg {
+  width: 20px;
+  height: 20px;
 }
 
 .cards {
