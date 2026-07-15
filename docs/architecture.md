@@ -3,7 +3,7 @@
 Adaptive Palette is intentionally small. The project is split into three layers:
 
 1. `src/adaptive-palette.js`
-   Framework-agnostic color computation. It accepts a background color and returns semantic color tokens, contrast metrics, and swatch metadata.
+   Framework-agnostic color computation. It accepts a background color and returns semantic color tokens, contrast metrics, and optional token metadata.
 
 2. `examples/dashboard/`
    A plain HTML/CSS/JS demo that shows how generated tokens can drive dense charts, metrics, and status tags.

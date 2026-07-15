@@ -27,5 +27,13 @@
     "design-tokens",
     "data-visualization"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prosody007/adaptive-palette.git"
+  },
+  "bugs": {
+    "url": "https://github.com/prosody007/adaptive-palette/issues"
+  },
+  "homepage": "https://github.com/prosody007/adaptive-palette#readme",
   "license": "MIT"
 }
