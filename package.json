@@ -1,11 +1,12 @@
 {
   "name": "adaptive-palette",
-  "version": "0.1.0",
-  "description": "Generate readable semantic UI color tokens from any background color.",
+  "version": "0.2.0",
+  "description": "Generate auditable semantic color tokens and conservatively adapt supported inline SVG paints.",
   "type": "module",
   "main": "./src/adaptive-palette.js",
   "exports": {
-    ".": "./src/adaptive-palette.js"
+    ".": "./src/adaptive-palette.js",
+    "./svg": "./src/svg-paint-adapter.js"
   },
   "files": [
     "src",
@@ -17,7 +18,7 @@
     "build": "npm run check && node scripts/build-static.mjs",
     "dev": "python3 -m http.server 4173 --bind 127.0.0.1",
     "test": "node --test",
-    "check": "node --check src/adaptive-palette.js && node --check examples/dashboard/app.js"
+    "check": "node --check src/adaptive-palette.js && node --check src/svg-paint-adapter.js && node --check examples/dashboard/app.js"
   },
   "keywords": [
     "color",

@@ -1,14 +1,17 @@
 # Architecture
 
-Adaptive Palette is intentionally small. The project is split into three layers:
+Adaptive Palette is intentionally small. The project is split into four layers:
 
 1. `src/adaptive-palette.js`
-   Framework-agnostic color computation. It accepts a background color and returns semantic color tokens, contrast metrics, and optional token metadata.
+   Framework-agnostic color computation. It returns semantic tokens, final-output contrast metrics, explicit contract status, OKLab series separation, and reversible CSS-variable application.
 
-2. `examples/dashboard/`
+2. `src/svg-paint-adapter.js`
+   Optional DOM integration for a deliberately limited inline SVG subset. It plans changes before writing, reapplies from immutable originals, and reports unsupported content so the caller can retain a light-surface fallback.
+
+3. `examples/dashboard/`
    A plain HTML/CSS/JS demo that shows how generated tokens can drive dense charts, metrics, and status tags.
 
-3. `index.html`
+4. `index.html`
    A GitHub Pages friendly entry point that redirects to the dashboard example.
 
 ## Algorithm
@@ -16,9 +19,10 @@ Adaptive Palette is intentionally small. The project is split into three layers:
 The core module uses WCAG relative luminance and contrast ratio calculations:
 
 - Pick black or white as the base readable direction.
-- Mix from the background toward the readable base until text reaches the target contrast.
-- Derive panel, border, grid, axis, and chart fill tokens with lightness-aware mixing.
-- Adjust accent colors until they meet the minimum chart-series contrast.
-- Export all results as CSS custom property friendly values.
+- Solve required and preferred text targets separately, with explicit failure metadata.
+- Remeasure rounded colors and alpha-composited pixels.
+- Keep meaningful axes and bars above the non-text contrast target while treating grid lines as decorative.
+- Search accents in OKLCH/OKLab and reject indistinguishable series combinations.
+- Export colors, metrics, compliance status, and restorable CSS custom properties.
 
-The library does not depend on `mix-blend-mode`, because blend modes are visual effects and cannot reliably guarantee text or chart contrast.
+The SVG adapter never executes markup and is not a sanitizer. Unsupported structures are returned as fallback reasons before any partial color writes. The library does not depend on global inversion or `mix-blend-mode`, because those effects cannot reliably guarantee text or chart contrast.

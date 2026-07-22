@@ -1,6 +1,6 @@
 # Adaptive Palette
 
-Generate accessible, theme-aware UI color tokens from a single background color.
+Generate auditable, theme-aware UI color tokens from a single background color, with an optional conservative adapter for supported inline SVG paints.
 
 Adaptive Palette is a small framework-agnostic color engine for AI-generated dashboards, charts, cards, and dynamic UI surfaces. It helps generated interfaces stay readable on both dark and light backgrounds without manually maintaining separate theme palettes.
 
@@ -9,6 +9,10 @@ Adaptive Palette is a small framework-agnostic color engine for AI-generated das
 - Generates semantic UI tokens from one background color
 - Uses WCAG relative luminance and contrast ratio calculations
 - Produces text, muted text, borders, panels, chart grid, axes, series colors, and status colors
+- Reports whether every required contrast and series-separation contract was actually met
+- Measures serialized and alpha-composited output, not only intermediate floating-point colors
+- Keeps chart series distinct in OKLCH/OKLab, including color-vision-deficiency checks
+- Conservatively adapts supported inline SVG paints and fails atomically to a caller-owned fallback
 - Exports CSS custom properties for easy integration
 - Works without dependencies, build tools, or a runtime framework
 - Includes a static dashboard demo ready for Vercel
@@ -85,8 +89,11 @@ Creates an adaptive palette from a hex background color.
 
 ```js
 const palette = createAdaptivePalette("#F5F7F9", {
-  textContrast: 8,
-  mutedContrast: 4.7,
+  textContrast: 4.5,
+  preferredTextContrast: 7,
+  mutedContrast: 4.5,
+  graphicContrast: 3,
+  seriesContrast: 3.3,
   accents: {
     seriesA: "#18B7A6",
     seriesB: "#F06B8A",
@@ -107,15 +114,37 @@ Returns:
     muted: "#6C6D6E",
     border: "rgba(...)",
     grid: "rgba(...)",
-    seriesA: "#139486"
+    seriesA: "#009385"
   },
   metrics: {
-    textContrast: 8.25,
-    mutedContrast: 4.85,
-    seriesAContrast: 3.48
+    textContrast: 7.04,
+    axisContrast: 3.01,
+    seriesAContrast: 3.55
+  },
+  compliance: {
+    valid: true,
+    failures: []
   },
   tokens: []
 }
+```
+
+The required text contract defaults to WCAG AA `4.5:1`. The engine prefers `7:1` when the background can reach it. If a caller explicitly requires an impossible target, the best reachable color is returned with `targetMet: false`, and `compliance.valid` becomes `false`.
+
+### `solveContrast(background, base, minimumContrast, options?)`
+
+Returns both the final serialized color and auditable status metadata:
+
+```js
+const result = solveContrast(background, base, 8);
+
+// {
+//   css: "#000000",
+//   target: 8,
+//   achieved: 5.2278,
+//   maximum: 5.2278,
+//   targetMet: false
+// }
 ```
 
 ### `applyPaletteToElement(element, palette, prefix?)`
@@ -124,6 +153,13 @@ Writes generated colors to CSS custom properties. The default prefix is `adaptiv
 
 ```js
 applyPaletteToElement(card, palette);
+```
+
+The returned object preserves the previous custom-property values and exposes an idempotent `restore()` method:
+
+```js
+const application = applyPaletteToElement(card, palette);
+application.restore();
 ```
 
 Common variables:
@@ -147,6 +183,41 @@ Common variables:
 --adaptive-warn-text
 ```
 
+### Conservative Inline SVG Adapter
+
+Import the adapter from the `./svg` export (or directly from `src/svg-paint-adapter.js` in a source checkout):
+
+```js
+import { createAdaptivePalette } from "adaptive-palette";
+import { adaptSvgPaint } from "adaptive-palette/svg";
+
+const palette = createAdaptivePalette("#1B212D");
+const result = adaptSvgPaint(svgElement, palette);
+
+if (result.fallback) {
+  svgContainer.classList.add("light-island");
+}
+
+// Reapply from immutable originals after a theme change.
+const next = adaptSvgPaint(svgElement, createAdaptivePalette("#F5F7F9"));
+next.restore();
+```
+
+Prefer explicit roles when the generator can provide them:
+
+```html
+<svg>
+  <rect width="100%" height="100%" data-color-role="background" />
+  <text data-color-role="text">Revenue</text>
+  <path data-color-role="axis" />
+  <path data-color-role="series-1" />
+</svg>
+```
+
+The first adapter release supports presentation attributes, inline style, `currentColor`, CSS variables, local paint references, and simple linear/radial gradient stops. It rejects the whole adaptation without partial writes when it finds filters, masks, patterns, embedded style blocks, external references, raster images, unknown roles, unsupported paint syntax, or an input larger than the configured node limit. The caller must retain a light-surface fallback for those cases.
+
+The adapter is not an HTML/SVG sanitizer and does not make untrusted script or event attributes safe. Sanitize model output before it reaches this layer.
+
 ## How It Works
 
 Adaptive Palette uses deterministic color generation:
@@ -154,19 +225,27 @@ Adaptive Palette uses deterministic color generation:
 1. Normalize and parse the input background color.
 2. Calculate WCAG relative luminance and contrast ratio.
 3. Choose a readable text direction from black or white.
-4. Mix from the background toward the readable direction until target contrast is reached.
-5. Derive panel, border, grid, axis, chart fill, and bar colors.
-6. Adjust chart accent colors until they meet the minimum contrast target.
-7. Export the result as JavaScript data and CSS variables.
+4. Solve required and preferred contrast independently and report unreachable targets.
+5. Serialize, composite, and remeasure the final CSS colors.
+6. Derive meaningful axes and bars at `3:1`; keep decorative grid contrast explicitly separate.
+7. Search chart accents in OKLCH/OKLab while checking background contrast, pairwise separation, and simulated color-vision deficiencies.
+8. Export colors, contract status, metrics, and CSS variables.
 
-The project does not use `mix-blend-mode` as the primary strategy. Blend modes are useful for visual effects, but they cannot reliably guarantee readability for dense charts and small UI text.
+The project does not use global inversion or `mix-blend-mode` as the primary strategy. Those effects cannot reliably preserve semantic colors or guarantee readability for dense charts and small UI text.
+
+## Scope
+
+The palette engine is the preferred path for token-compliant generated UI. The SVG adapter is a compatibility layer, not a promise to reinterpret arbitrary SVG semantics. Vendor-managed charts such as Plotly and JSXGraph should be updated through their own theme APIs; Canvas, WebGL, Lottie, external SVG images, and complex paint servers remain caller-owned fallback cases.
+
+Runtime code has no dependencies. The core module is framework-agnostic. The SVG adapter requires modern DOM and `CSSStyleDeclaration` APIs; validate it in the minimum WebView/browser versions your product supports before production rollout.
 
 ## Project Structure
 
 ```text
 .
 ├── src/
-│   └── adaptive-palette.js
+│   ├── adaptive-palette.js
+│   └── svg-paint-adapter.js
 ├── examples/
 │   └── dashboard/
 │       ├── index.html
@@ -179,7 +258,8 @@ The project does not use `mix-blend-mode` as the primary strategy. Blend modes a
 ├── scripts/
 │   └── build-static.mjs
 ├── test/
-│   └── adaptive-palette.test.js
+│   ├── adaptive-palette.test.js
+│   └── svg-paint-adapter.test.js
 ├── vercel.json
 ├── package.json
 └── README.md
@@ -198,7 +278,7 @@ Scripts:
 
 - `npm run dev` starts a local static server on `127.0.0.1:4173`
 - `npm run check` validates JavaScript syntax
-- `npm test` runs Node test coverage for the core palette engine
+- `npm test` runs the core and SVG adapter contract suites
 - `npm run build` validates the project and writes static output to `public/`
 
 ## Deploy to Vercel
@@ -216,7 +296,7 @@ The included `vercel.json` redirects `/` to `/examples/dashboard/` and adds basi
 
 ## Security
 
-The demo is static and does not collect user data, access cookies, or send network requests. Inputs are limited to hex colors and validated before use. If you extend the demo to accept arbitrary text, remote JSON, or user-provided chart data, avoid injecting that content with `innerHTML`.
+The demo is static and does not collect user data, access cookies, or send network requests. Inputs are limited to hex colors and validated before use. The SVG adapter changes paint values only; it does not sanitize scripts, event handlers, URLs, or arbitrary markup. Sanitize untrusted content before adaptation, and avoid injecting it with `innerHTML`.
 
 ## License
 

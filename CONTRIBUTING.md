@@ -15,6 +15,7 @@ npm test
 - Keep the core module framework-agnostic.
 - Avoid adding runtime dependencies unless there is a clear reason.
 - Add or update tests when changing color calculation behavior.
+- Keep unsupported SVG behavior atomic: either adapt the supported subtree or return fallback without partial writes.
 - Keep the dashboard demo focused on showing adaptive color behavior.
 - Run `npm run build` before submitting changes.
 
@@ -22,5 +23,5 @@ npm test
 
 - Use modern JavaScript modules.
 - Prefer small, named functions over large inline blocks.
-- Keep DOM demo code separate from core color logic.
+- Keep optional DOM adapter code separate from core color logic.
 - Use CSS custom properties for visual integration.
