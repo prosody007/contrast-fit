@@ -12,7 +12,7 @@ ContrastFit is a deterministic, framework-independent JavaScript color engine fo
 - **ES modules, CommonJS, and a standalone browser script**, with TypeScript declarations.
 - **SSR-safe CSS serialization**, optional DOM application, and **zero runtime dependencies**.
 
-> **Release status:** pre-release, with local and remote CI verification and a public demo. This repository does not yet document a public npm release. Use a local build or tarball; a matching registry name is not proof that a package is this project. CI checks, a deployed demo, and an actual published release are separate milestones.
+> **Release status:** `0.1.0` is the first public release candidate, with a public demo and a manual release process. Registry publication is not yet confirmed; use a reviewed local build or tarball below. The intended npm tag is `latest` (default installation), but the 0.x API remains early access and may evolve. CI checks, a deployed demo, and a confirmed npm release are separate milestones.
 
 [Live demo](https://prosody007.github.io/contrast-fit/) · [CI](https://github.com/prosody007/contrast-fit/actions/workflows/ci.yml) · [Quick start](#quick-start) · [What it solves](#what-it-solves) · [Integration](#integration) · [API](#api-overview) · [Accessibility boundaries](#accessibility-boundaries) · [Development](#development-and-verification) · [Migration](./MIGRATING.md)
 

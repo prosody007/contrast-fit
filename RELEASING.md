@@ -4,7 +4,9 @@ Publication, Git tags, and GitHub releases are **manual, separately authorized m
 
 ## Current distribution status
 
-No public npm release is currently documented. Use source imports or a reviewed local tarball as described in the [API reference](./docs/api.md). The intended npm package and GitHub repository slug is `contrast-fit`; the product name is ContrastFit.
+The first public release candidate is `contrast-fit@0.1.0`. Registry publication is not yet confirmed. Use source imports or a reviewed local tarball as described in the [API reference](./docs/api.md) until independent registry verification succeeds. The npm package and GitHub repository slug is `contrast-fit`; the product name is ContrastFit.
+
+The authorized release plan selects npm **`latest`**, followed by an annotated **`v0.1.0`** tag and a normal (not draft, not SemVer-prerelease) GitHub release. `latest` is a default-install channel, not a promise of 1.0 API stability. This first usable 0.x release is early access; its APIs and fitted colors may evolve. Do not claim WCAG certification, universal browser support, or legal naming clearance.
 
 Keep these claims distinct in every release report:
 
@@ -33,7 +35,8 @@ npm ci --ignore-scripts
 npm run verify
 npx --no-install playwright install chromium
 npm run test:browser
-npm publish --dry-run
+npm run package:smoke -- --browser
+npm publish --dry-run --registry=https://registry.npmjs.org --tag latest --access public
 ```
 
 `verify` is the repository's combined syntax, type-consumer, core-test/coverage, build/static-output, and packaged-consumer gate. Keep it aligned with the current scripts rather than treating this prose as a replacement for their implementation. Run a fresh build if files change before browser tests.
@@ -66,19 +69,24 @@ npm publish --dry-run
 
 ## 5. Publish only after explicit approval
 
-The following is an example of a deliberate pre-release-tag publication, not an instruction to run it during development:
+For the authorized first release, use the maintained npm CLI with normal authentication/MFA. Confirm the effective account with `npm whoami --registry=https://registry.npmjs.org`, and reconcile `npm view contrast-fit --json --registry=https://registry.npmjs.org` plus existing remote tags/releases before publishing. An unauthenticated 404 means absent metadata, not ownership. If an unexpected package/version or maintainer exists, stop for a decision; do not choose another name/version or overwrite it.
 
-```sh
-# Only after the reviewed version and registry tag are explicitly authorized:
-npm publish --tag next --access public
-```
+1. Commit and push the reviewed package source normally. Require **all five jobs** (Node 22/24/26, Chromium, Pages) to succeed for that exact SHA.
+2. From that clean tested commit, run `npm pack --pack-destination /absolute/path/to/release-artifacts`. Record the source SHA, npm version, exact file list, SHA-256 and SHA-512 integrity of the resulting `contrast-fit-0.1.0.tgz`. Inspect the actual archive for secrets and unintended files, and exercise that archive in an empty consumer. Keep the reviewed bytes unchanged.
+3. Dry-run and publish **the reviewed archive**, not a newly rebuilt directory:
 
-The version and tag must be chosen deliberately. `--tag next` alone does not turn an ordinary version number into a SemVer pre-release. Do not use `latest` for an unapproved stable release. Use provenance where the chosen publishing workflow actually supports and has configured it; do not add a token to work around missing trusted-publishing setup.
+   ```sh
+   npm publish /absolute/path/to/contrast-fit-0.1.0.tgz --dry-run --registry=https://registry.npmjs.org --tag latest --access public
+   # Only after the dry run, exact-head CI and normal authenticated/MFA checks pass:
+   npm publish /absolute/path/to/contrast-fit-0.1.0.tgz --registry=https://registry.npmjs.org --tag latest --access public
+   ```
+
+Use provenance only where the actual publishing workflow supports and has configured it. This local CLI path does not claim provenance; do not add a long-lived token or bypass MFA to manufacture it. Never put credentials or short-lived authentication URLs in release artifacts, Git, public notes, or logs shared with others.
 
 After authorized publication:
 
-1. Independently install the exact published version into an empty consumer and verify ESM, CommonJS, TypeScript, and the browser-global asset.
-2. Verify registry metadata, integrity, included files, license, and the intended distribution tag.
-3. Create only the separately approved Git tag and GitHub release, with notes that distinguish breaking changes, fixes, evidence, and remaining limits.
-4. Update distribution-status prose with the confirmed version and tested instructions. Update the website only through its reviewed deployment process.
-5. Never overwrite or pretend to replace an already-published version. Handle a bad release with the registry's supported deprecation/remediation process and a new reviewed version.
+1. Independently fetch registry metadata and install `contrast-fit@0.1.0` from the official registry into an empty consumer (not from the local archive). Verify ESM, CommonJS, strict TypeScript NodeNext import/typed require, browser-global execution and the DOM adapter.
+2. Verify `latest` resolves to `0.1.0`, the effective maintainer, zero runtime dependencies, MIT license, declarations/files, and registry `dist.integrity` against the exact reviewed archive. Record `gitHead` when present; an external source-SHA/checksum record is authoritative if archive publication omits that field.
+3. Create the annotated `v0.1.0` tag **at the tested package-source commit**, push normally, and publish the authorized GitHub release with truthful maturity, features, breaking development-snapshot changes, verification, and limits. Attach the exact published archive and checksums when useful; verify the tag's dereferenced SHA and the public non-draft release/assets.
+4. Only after registry verification, update active README/API/migration/security/site distribution prose with the confirmed version and `npm install contrast-fit` instructions. Keep this as a **separate documentation commit**; do not move `v0.1.0` away from the published package source. Re-run the appropriate local checks and the complete exact-head CI/Pages pipeline for this final documentation commit.
+5. Never overwrite or pretend to replace an already-published version. Handle a bad release with the registry's supported deprecation/remediation process and a new reviewed version. If authentication blocks publication, retain candidate wording, report the prepared source/checksums and concrete login action, and do not announce an npm release that does not exist.
