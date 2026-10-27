@@ -12,9 +12,9 @@ ContrastFit is a deterministic, framework-independent JavaScript color engine fo
 - **ES modules, CommonJS, and a standalone browser script**, with TypeScript declarations.
 - **SSR-safe CSS serialization**, optional DOM application, and **zero runtime dependencies**.
 
-> **Release status:** pre-release, developed and verified locally. This repository does not yet document a public npm release. Use a local build or tarball; a matching registry name is not proof that a package is this project. Local checks, configured CI, a deployed demo, and an actual published release are separate milestones.
+> **Release status:** pre-release, with local and remote CI verification and a public demo. This repository does not yet document a public npm release. Use a local build or tarball; a matching registry name is not proof that a package is this project. CI checks, a deployed demo, and an actual published release are separate milestones.
 
-[Quick start](#quick-start) · [What it solves](#what-it-solves) · [Integration](#integration) · [API](#api-overview) · [Accessibility boundaries](#accessibility-boundaries) · [Development](#development-and-verification) · [Migration](./MIGRATING.md)
+[Live demo](https://prosody007.github.io/contrast-fit/) · [CI](https://github.com/prosody007/contrast-fit/actions/workflows/ci.yml) · [Quick start](#quick-start) · [What it solves](#what-it-solves) · [Integration](#integration) · [API](#api-overview) · [Accessibility boundaries](#accessibility-boundaries) · [Development](#development-and-verification) · [Migration](./MIGRATING.md)
 
 ## What it solves
 
@@ -71,7 +71,7 @@ This is **not** a palette-inspiration generator, an image color extractor, a ful
 
 ### Run the interactive demo
 
-Use **Node.js 22+** and npm:
+[Open the public demo](https://prosody007.github.io/contrast-fit/) without an account or installation. To run it locally, use **Node.js 22+** and npm:
 
 ```bash
 git clone https://github.com/prosody007/contrast-fit.git
@@ -331,7 +331,7 @@ Run browser checks against a current static build. `verify` builds it; after fur
 
 The regression suite protects automatic resolution, preserved-input diagnostics, alpha-composite measurements, final CSS values, non-color chart encodings, and invalid-input handling. Coverage thresholds are gates, not reasons to weaken the product's targets.
 
-CI is configured for Node.js **22, 24, and 26**, with a separate Chromium job. A successful local run is not evidence that those remote jobs have run. Development tools are pinned; the published runtime has **no dependencies**.
+CI runs Node.js **22, 24, and 26**, with a separate Chromium job. Check the [workflow results](https://github.com/prosody007/contrast-fit/actions/workflows/ci.yml) for the exact commit you consume; a successful local run is not evidence that remote jobs have run. Development tools are pinned; the package runtime has **no dependencies**.
 
 ## Build and deploy the demo
 
@@ -340,9 +340,11 @@ npm ci --ignore-scripts
 npm run build
 ```
 
-Deploy `public/` to a static host. For Vercel, use preset **Other**, build command **`npm run build`**, and output directory **`public`**. The included configuration redirects `/` to `/examples/dashboard/` and adds basic security headers.
+The public demo is hosted at <https://prosody007.github.io/contrast-fit/>. On a push to `main`, the CI workflow deploys **only `public/`** to GitHub Pages **after all three Node.js verification jobs and the Chromium job succeed for that exact commit**. Pull requests and manual verification runs do not deploy. Static asset links are relative so the demo also works under the `/contrast-fit/` project path.
 
-The core and demo use no analytics, cookies, remote data fetching, or backend service. Static assets still require HTTP requests, and repository links open GitHub. This repository does not provision hosting or publish packages automatically.
+You can also deploy `public/` to another static host. For Vercel, use preset **Other**, build command **`npm run build`**, and output directory **`public`**. The included Vercel configuration redirects `/` to `/examples/dashboard/` and adds basic security headers; these host-specific rules do not configure GitHub Pages. The root HTML provides a relative demo redirect for other hosts.
+
+The core and demo use no analytics, application cookies, remote data fetching, or backend service. Static assets still require HTTP requests, hosting providers can add their own behavior, and repository links open GitHub. The workflow deploys the static demo only; it does **not** publish npm packages, tags, or releases.
 
 ## Project documentation
 
