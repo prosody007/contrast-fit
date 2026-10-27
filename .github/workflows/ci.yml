@@ -49,3 +49,39 @@ jobs:
       - run: npm run test:browser
       - name: Test the packed classic browser script and DOM adapter
         run: npm run package:smoke -- --browser
+
+  deploy:
+    name: Deploy public demo to GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [verify, browser]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+      - name: Install pinned development tools
+        run: npm ci --ignore-scripts
+      - name: Build the static demo
+        run: npm run build
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload the static demo artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+      - name: Deploy the static demo
+        id: deployment
+        uses: actions/deploy-pages@v5
