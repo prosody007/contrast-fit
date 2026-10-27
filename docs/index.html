@@ -111,10 +111,10 @@
           TypeScript, and local source builds, see the
           <a href="./api.md">distribution guide and API reference</a>.
         </p>
-        <pre><code>npm install contrast-fit
+        <pre tabindex="0" role="region" aria-label="Install ContrastFit with npm"><code>npm install contrast-fit
 # Or pin the first public release:
 npm install contrast-fit@0.1.0</code></pre>
-        <pre><code>import {
+        <pre tabindex="0" role="region" aria-label="JavaScript integration example"><code>import {
   createContrastFit,
   applyPaletteToElement,
 } from "contrast-fit";
@@ -129,7 +129,7 @@ if (card) {
 console.log(palette.inputBackground); // #777777
 console.log(palette.background);      // #A0A0A0
 console.log(palette.adjustments);     // inspect the applied repair</code></pre>
-        <pre><code>.card {
+        <pre tabindex="0" role="region" aria-label="CSS integration example"><code>.card {
   background: var(--contrast-fit-bg);
   color: var(--contrast-fit-text);
 }

@@ -58,7 +58,7 @@ a {
 
 .eyebrow {
   margin: 0 0 12px;
-  color: #667085;
+  color: #475467;
   font-size: 12px;
   font-weight: 780;
   letter-spacing: 0.08em;
@@ -118,6 +118,11 @@ pre {
   padding: 18px;
   background: #121722;
   color: #f5f7f9;
+}
+
+pre:focus-visible {
+  outline: 3px solid #334a82;
+  outline-offset: 3px;
 }
 
 code {

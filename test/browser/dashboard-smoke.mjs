@@ -517,6 +517,36 @@ async function main() {
     }
     console.log("PASS live inspector: 17 tokens, effective colors, CSS, JSON and repair messages follow only the first card");
     console.log("PASS responsive: 320/375/680/768px SVG labels render >=10px; labeled chart regions have visible focus and arrow-key scrolling; no horizontal page overflow; narrow tables scroll by keyboard");
+    for (const width of [1440, 320]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto(`${server.origin}/docs/`, { waitUntil: "networkidle" });
+      assert.match(await page.locator("#usage").textContent(), /Install the first public release/);
+      assert.match(await page.locator("body").textContent(), /npm install contrast-fit@0\.1\.0/);
+      assert.equal(await page.locator('a[href="https://www.npmjs.com/package/contrast-fit/v/0.1.0"]').count(), 1);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true,
+        `${width}px: product documentation does not overflow the page`);
+      if (width === 320) {
+        const codeExamples = page.locator("pre");
+        assert.equal(await codeExamples.count(), 3);
+        for (let index = 0; index < 3; index += 1) {
+          const example = codeExamples.nth(index);
+          assert.equal(await example.getAttribute("tabindex"), "0");
+          assert.equal(await example.getAttribute("role"), "region");
+          assert.ok(await example.getAttribute("aria-label"));
+          await page.locator("#usage").click();
+          await page.keyboard.press("Tab");
+          await example.focus();
+          assert.equal(await example.evaluate((element) => element.matches(":focus-visible")
+            && getComputedStyle(element).outlineStyle !== "none"), true,
+          "scrollable documentation code has visible keyboard focus");
+          await page.keyboard.press("ArrowRight");
+          await page.waitForFunction((index) => document.querySelectorAll("pre")[index].scrollLeft > 0, index);
+        }
+      }
+      await page.addScriptTag({ content: axe.source });
+      await verifyAxe(page, `${width}px product documentation with confirmed installation instructions`);
+    }
+    console.log("PASS product documentation: registry installation instructions, desktop/mobile layout and accessibility gate");
     assert.deepEqual(errors, [], `no page errors or failed requests: ${JSON.stringify(errors)}`);
     console.log(`PASS dashboard browser smoke (${sourceMode ? "source preview" : "built public/"}; Chromium ${browser.version()})`);
   } finally {
