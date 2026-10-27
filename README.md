@@ -342,7 +342,7 @@ npm run build
 
 The public demo is hosted at <https://prosody007.github.io/contrast-fit/>. On a push to `main`, the CI workflow deploys **only `public/`** to GitHub Pages **after all three Node.js verification jobs and the Chromium job succeed for that exact commit**. Pull requests and manual verification runs do not deploy. Static asset links are relative so the demo also works under the `/contrast-fit/` project path.
 
-You can also deploy `public/` to another static host. For Vercel, use preset **Other**, build command **`npm run build`**, and output directory **`public`**. The included Vercel configuration redirects `/` to `/examples/dashboard/` and adds basic security headers; these host-specific rules do not configure GitHub Pages. The root HTML provides a relative demo redirect for other hosts.
+You can also deploy `public/` to another static host. The root HTML provides a relative redirect to `examples/dashboard/`, so project-subpath hosting does not require host-specific redirect rules.
 
 The core and demo use no analytics, application cookies, remote data fetching, or backend service. Static assets still require HTTP requests, hosting providers can add their own behavior, and repository links open GitHub. The workflow deploys the static demo only; it does **not** publish npm packages, tags, or releases.
 

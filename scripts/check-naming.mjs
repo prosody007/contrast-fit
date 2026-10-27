@@ -15,7 +15,7 @@ const historicalDocuments = new Set([
   "public/MIGRATING.md", "public/CHANGELOG.md",
 ]);
 const ignoredDirectories = new Set([
-  ".git", "node_modules", ".cache", ".vercel", ".playwright", "coverage",
+  ".git", "node_modules", ".cache", ".playwright", "coverage",
   "playwright-report", "test-results",
 ]);
 
