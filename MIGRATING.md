@@ -1,6 +1,6 @@
 # Migrating to ContrastFit
 
-This is a **breaking pre-release rename**, not an announcement of an npm publication. ContrastFit is the active product name; `contrast-fit` is the intended package name and repository slug. No public npm release is currently documented. Use a reviewed local tarball or source checkout until publication is explicitly confirmed.
+This guide maps **breaking changes from unpublished development snapshots** to the first public release, [`contrast-fit@0.1.0`](https://www.npmjs.com/package/contrast-fit/v/0.1.0). ContrastFit is the active product name; `contrast-fit` is the published npm package name and repository slug. Registry publication and independent installed-consumer verification are confirmed. Install with `npm install contrast-fit` (currently `latest` = `0.1.0`), or pin `npm install contrast-fit@0.1.0`. This early-access 0.x API is not a 1.0 stability promise.
 
 This guide is the deliberate historical mapping for existing checkouts and integrations. There are no promised compatibility aliases, old-name re-exports, deprecated shims, or preserved old CSS properties.
 
@@ -22,7 +22,7 @@ Other public utility function names remain unchanged: `normalizeHex`, `parseHex`
 
 ## 1. Update imports and types
 
-For an application with a locally installed package:
+For an application with the published package or a reviewed local tarball installed:
 
 ```ts
 // Before:
@@ -44,7 +44,7 @@ import { createAdaptivePalette } from "./src/adaptive-palette.js";
 import { createContrastFit } from "./src/contrast-fit.js";
 ```
 
-Update the application's local dependency reference and lockfile with its normal package workflow. Do not blindly replace a dependency with a registry install: the new name is not evidence that a public version exists. See [local tarball instructions](./docs/api.md).
+Update the application's dependency reference and lockfile with its normal package workflow. The first confirmed public version is `contrast-fit@0.1.0`; earlier manifest labels were unpublished snapshots, not prior registry releases. See [registry and local tarball instructions](./docs/api.md).
 
 A local checkout directory does not need to be renamed for the API to work. The directory name is not an exported identifier. If you rename your checkout, update absolute paths in your own editor, scripts, and deployment settings deliberately.
 
@@ -86,11 +86,11 @@ The source remains ESM. Built distributions provide:
 - `dist/contrast-fit.global.js`: classic browser script exposing `globalThis.ContrastFit`.
 - TypeScript declarations resolved through the manifest's type/conditional export entries.
 
-Prefer package-root imports after installing a reviewed tarball. Do not depend on undeclared deep package imports. For a source checkout, update the explicit source filename. For a script-tag integration, copy the built global file into your own assets and call `globalThis.ContrastFit.createContrastFit`; the bundle does not automatically theme the DOM.
+Prefer package-root imports after installing from npm or a reviewed tarball. Do not depend on undeclared deep package imports. For a source checkout, update the explicit source filename. For a script-tag integration, copy the built global file into your own assets and call `globalThis.ContrastFit.createContrastFit`; the bundle does not automatically theme the DOM.
 
 ## 4. Check the current fitting contract
 
-This pre-release work also formalizes automatic contrast repair and measured result metadata. If you are upgrading from an earlier warning-only integration, do not assume the input color remains the content background:
+The first public release also formalizes automatic contrast repair and measured result metadata. If you are upgrading from an earlier warning-only integration, do not assume the input color remains the content background:
 
 ```js
 const palette = createContrastFit("#777777");

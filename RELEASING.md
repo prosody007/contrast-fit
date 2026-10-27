@@ -4,9 +4,19 @@ Publication, Git tags, and GitHub releases are **manual, separately authorized m
 
 ## Current distribution status
 
-The first public release candidate is `contrast-fit@0.1.0`. Registry publication is not yet confirmed. Use source imports or a reviewed local tarball as described in the [API reference](./docs/api.md) until independent registry verification succeeds. The npm package and GitHub repository slug is `contrast-fit`; the product name is ContrastFit.
+[`contrast-fit@0.1.0`](https://www.npmjs.com/package/contrast-fit/v/0.1.0) was published on 2026-10-27 and independently verified from the official registry. Install with `npm install contrast-fit` or pin `npm install contrast-fit@0.1.0`; see the [API reference](./docs/api.md) for ESM, CommonJS, TypeScript and self-hosted browser-script examples. The npm package and GitHub repository slug is `contrast-fit`; the product name is ContrastFit.
 
-The authorized release plan selects npm **`latest`**, followed by an annotated **`v0.1.0`** tag and a normal (not draft, not SemVer-prerelease) GitHub release. `latest` is a default-install channel, not a promise of 1.0 API stability. This first usable 0.x release is early access; its APIs and fitted colors may evolve. Do not claim WCAG certification, universal browser support, or legal naming clearance.
+The completed first release uses npm **`latest`**, annotated **`v0.1.0`**, and a normal (not draft, not SemVer-prerelease) [GitHub release](https://github.com/prosody007/contrast-fit/releases/tag/v0.1.0). `latest` is a default-install channel, not a promise of 1.0 API stability. This first usable 0.x release is early access; its APIs and fitted colors may evolve. Do not claim WCAG certification, universal browser support, or legal naming clearance.
+
+### First-release evidence
+
+- Package-source commit: `000afc5852abf8399d1c091bb7114e05193bca5f`; [all five exact-source CI jobs passed](https://github.com/prosody007/contrast-fit/actions/runs/40491320212): Node 22/24/26, Chromium, Pages.
+- Normal owner-authenticated npm CLI plus 2FA; no token bypass or local-CLI provenance claim. npm briefly processed a registry staging placeholder before `0.1.0` became visible; no alternate version was deliberately published by this release process.
+- Official registry `latest` = `0.1.0`, maintainer `prosody007`, MIT, zero runtime dependencies, 17 files, 46,897-byte archive. Registry bytes exactly match the reviewed archive.
+- SHA-256: `65e2b67c0b188347c5cd783eb55ec1a4db384c68e8269b1ae755946f9fc95814`.
+- Registry integrity: `sha512-FmRfeP+EODZVAqqCwl3+ssl0CM1bLa9Vh1HYw66g3oXlqmj2augkJUKmhFEUQl2ZHAgdnWWbfdmI3jZY2yonNA==`.
+- Empty official-registry install passed ESM, CommonJS, strict TypeScript NodeNext import/typed require, and classic-browser global/DOM adapter checks. The archive, checksum and source mapping are GitHub release assets; registry `gitHead` was absent for this exact-tarball publication.
+- The release tag remains at the package-source commit. This confirmed-install documentation is a separate later commit; the immutable published archive retains its truthful pre-publication candidate prose. Future releases must update source and version deliberately, not republish `0.1.0`.
 
 Keep these claims distinct in every release report:
 
@@ -14,7 +24,7 @@ Keep these claims distinct in every release report:
 - **Remote CI:** results for the exact proposed commit, not the existence of a workflow.
 - **Registry publication:** confirmed package/version/tag after authorized publication, not a manifest or dry run.
 
-Node 22/24/26 are the configured remote verification targets. Their current remote results are **not yet verified by this checklist**; inspect all required jobs before a release. A local pass on one Node version does not establish the other matrix results.
+Node 22/24/26 are the configured remote verification targets. Their package-source results are verified above; inspect all required jobs for each new proposed commit before a release. A local pass on one Node version does not establish the other matrix results.
 
 ## 1. Confirm ownership, naming, and authorization
 

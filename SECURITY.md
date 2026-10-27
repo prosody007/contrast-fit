@@ -2,7 +2,7 @@
 
 ## Scope and supported code
 
-Security fixes target the latest reviewed code on `main`. There is no documented public npm release or long-term-support release line at present. A repository version number alone is not evidence that a package has been published.
+Security fixes target the latest reviewed code on `main` and the current public release, `contrast-fit@0.1.0` (npm `latest`). The first release was published and independently verified on 2026-10-27. This is an early-access 0.x line, not a long-term-support commitment; upgrade to reviewed fixes when available. The [release notes](https://github.com/prosody007/contrast-fit/releases/tag/v0.1.0) identify the exact package source and archive integrity.
 
 ContrastFit's calculation engine runs locally, has zero runtime dependencies, and does not make network requests, read cookies, store data, or call an external model service. The bundled demonstration is a static site: loading its assets and following explicit links are separate from the engine's calculations. A hosting provider or a consuming application may have its own logging, analytics, storage, or privacy policy.
 

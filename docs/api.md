@@ -6,7 +6,13 @@ This reference describes the complete public API. For the product overview, see 
 
 ## Distribution and imports
 
-There is no documented public npm release. The package name is `contrast-fit`; the examples below assume a locally built tarball has already been installed, not that a registry package is available. See the [release checklist](../RELEASING.md) before publishing anything.
+[`contrast-fit@0.1.0`](https://www.npmjs.com/package/contrast-fit/v/0.1.0) is published on the official npm registry under `latest`. Registry bytes and an empty registry-installed consumer were independently verified. This is an early-access 0.x API; exact fitted colors and APIs may evolve with documented changes. See the [release notes](https://github.com/prosody007/contrast-fit/releases/tag/v0.1.0) and [release checklist](../RELEASING.md) for source, integrity and verification boundaries.
+
+```sh
+npm install contrast-fit
+# Or pin the first public release:
+npm install contrast-fit@0.1.0
+```
 
 From a repository checkout:
 
@@ -32,7 +38,7 @@ npm install /path/to/contrast-fit-<version>.tgz
 The package provides named exports through ESM and CommonJS entry points:
 
 ```js
-// ESM, after installing the local tarball:
+// ESM, after installing from npm or a reviewed local tarball:
 import { createContrastFit } from "contrast-fit";
 
 // CommonJS, in a separate .cjs consumer:
@@ -42,14 +48,14 @@ const { createContrastFit } = require("contrast-fit");
 Build outputs are `dist/contrast-fit.js` (ESM), `dist/contrast-fit.cjs` (CommonJS), and `dist/contrast-fit.global.js` (classic browser script), with TypeScript declarations resolved by the package manifest. The browser bundle exposes the named exports on `globalThis.ContrastFit`:
 
 ```html
-<!-- Copy the built file into your application's own assets directory. -->
+<!-- Copy node_modules/contrast-fit/dist/contrast-fit.global.js into your assets directory. -->
 <script src="assets/contrast-fit.global.js"></script>
 <script>
   const palette = globalThis.ContrastFit.createContrastFit("#123456");
 </script>
 ```
 
-No CDN URL or public registry availability is implied. The global bundle does not automatically apply a theme or modify the page.
+The browser example is self-hosted and does not rely on a CDN. The global bundle does not automatically apply a theme or modify the page. Strict TypeScript consumers resolve ESM declarations through the import export condition and CommonJS declarations through the require condition; both NodeNext import and typed require were verified against the actual registry-installed release.
 
 ## Input conventions
 

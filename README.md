@@ -12,7 +12,7 @@ ContrastFit is a deterministic, framework-independent JavaScript color engine fo
 - **ES modules, CommonJS, and a standalone browser script**, with TypeScript declarations.
 - **SSR-safe CSS serialization**, optional DOM application, and **zero runtime dependencies**.
 
-> **Release status:** `0.1.0` is the first public release candidate, with a public demo and a manual release process. Registry publication is not yet confirmed; use a reviewed local build or tarball below. The intended npm tag is `latest` (default installation), but the 0.x API remains early access and may evolve. CI checks, a deployed demo, and a confirmed npm release are separate milestones.
+> **Release status:** [`contrast-fit@0.1.0`](https://www.npmjs.com/package/contrast-fit/v/0.1.0) is published on npm under `latest`, independently installed and verified from the official registry. This first usable **0.x release is early access**, not a 1.0 API-stability promise or WCAG certification. [Release notes and exact archive/checksums](https://github.com/prosody007/contrast-fit/releases/tag/v0.1.0) identify the tested package source; current documentation lives on `main`.
 
 [Live demo](https://prosody007.github.io/contrast-fit/) · [CI](https://github.com/prosody007/contrast-fit/actions/workflows/ci.yml) · [Quick start](#quick-start) · [What it solves](#what-it-solves) · [Integration](#integration) · [API](#api-overview) · [Accessibility boundaries](#accessibility-boundaries) · [Development](#development-and-verification) · [Migration](./MIGRATING.md)
 
@@ -84,7 +84,21 @@ Open <http://127.0.0.1:4173/>. The development server binds to loopback only.
 
 The demo includes two independently controlled dashboard cards, a one-click mid-gray repair example, applied-background and contrast readouts, distinct chart line/marker encodings, accessible data tables, and a live inspector for the first card's tokens, adjustments, CSS, and JSON output. The [product guide](./docs/index.html) explains the engine separately from the dashboard example.
 
-### Build a local package
+### Install from npm
+
+Use Node.js **22+** for server-side applications and tooling:
+
+```bash
+npm install contrast-fit
+# To pin the first public release explicitly:
+npm install contrast-fit@0.1.0
+```
+
+The published package provides ESM, CommonJS, browser-global assets, and dual TypeScript declarations with **zero runtime dependencies**. The official-registry tarball was verified byte-for-byte against the reviewed release archive and exercised in an empty consumer.
+
+### Build a local package instead
+
+For source development or an independently reviewed checkout:
 
 ```bash
 # In this repository, after npm ci --ignore-scripts:
@@ -151,7 +165,7 @@ const variables = paletteToCssVariables(palette, "report");
 
 ### Standalone browser script
 
-After `npm run build:lib`, serve the generated script alongside your application. The static site build also includes it under `dist/`.
+Copy `node_modules/contrast-fit/dist/contrast-fit.global.js` from the installed package into your application's `dist/` assets directory and serve it alongside your page. From a source checkout, `npm run build:lib` generates the same script; the static site build also includes it under `dist/`.
 
 ```html
 <script src="./dist/contrast-fit.global.js"></script>
@@ -161,7 +175,7 @@ After `npm run build:lib`, serve the generated script alongside your application
 </script>
 ```
 
-The global build exposes `globalThis.ContrastFit`. This is a local-file example, not a claim that a CDN release exists. Browser integration requires a modern browser with the JavaScript features used by the ES2022 build and CSS custom-property support; there is no legacy-browser/polyfill guarantee.
+The global build exposes `globalThis.ContrastFit`. This is a self-hosted file example; it does not depend on a CDN. Browser integration requires a modern browser with the JavaScript features used by the ES2022 build and CSS custom-property support; there is no legacy-browser/polyfill guarantee.
 
 ### TypeScript, frameworks, and SSR
 

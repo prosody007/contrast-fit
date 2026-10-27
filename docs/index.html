@@ -103,17 +103,21 @@
       </section>
 
       <section class="section" aria-labelledby="usage">
-        <h2 id="usage">Start from source or a local tarball</h2>
+        <h2 id="usage">Install the first public release</h2>
         <p>
-          ContrastFit is pre-release; no public npm release is currently documented.
-          This example uses a repository-root source import. For local package installation,
-          ESM/CommonJS, browser globals, and TypeScript, see the
+          <a href="https://www.npmjs.com/package/contrast-fit/v/0.1.0">ContrastFit 0.1.0 is published on npm</a>
+          under <code>latest</code>, with independently verified registry bytes and installed consumers.
+          This is an early-access 0.x API, not a 1.0 stability promise. For CommonJS, browser globals,
+          TypeScript, and local source builds, see the
           <a href="./api.md">distribution guide and API reference</a>.
         </p>
+        <pre><code>npm install contrast-fit
+# Or pin the first public release:
+npm install contrast-fit@0.1.0</code></pre>
         <pre><code>import {
   createContrastFit,
   applyPaletteToElement,
-} from "./src/contrast-fit.js";
+} from "contrast-fit";
 
 const card = document.querySelector(".card");
 const palette = createContrastFit("#777777");

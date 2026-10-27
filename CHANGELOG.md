@@ -1,14 +1,16 @@
 # Changelog
 
-Notable changes to ContrastFit are documented here. A release-candidate section records reviewed source, not proof of registry publication.
+Notable changes to ContrastFit are documented here. The first public npm release below is independently confirmed; earlier repository snapshots were not separate public releases.
 
 ## Unreleased
 
 No additional changes yet.
 
-## 0.1.0 — first public release candidate (2026-10-27)
+## 0.1.0 — first public release (2026-10-27)
 
-Prepared for the first authorized public release as `contrast-fit@0.1.0`, using the npm `latest` distribution tag. **Registry publication is not yet confirmed.** `latest` selects the default install; this remains an early-access 0.x API, not a 1.0 stability or accessibility-certification claim. The final tag must identify the exact tested source of the published tarball.
+Published as [`contrast-fit@0.1.0`](https://www.npmjs.com/package/contrast-fit/v/0.1.0), using the npm `latest` distribution tag. Official-registry archive bytes and an empty registry-installed ESM/CommonJS/TypeScript/browser consumer were independently verified. `latest` selects the default install; this remains an early-access 0.x API, not a 1.0 stability or accessibility-certification claim.
+
+The annotated [`v0.1.0` tag and release](https://github.com/prosody007/contrast-fit/releases/tag/v0.1.0) identify the exact tested package source `000afc5852abf8399d1c091bb7114e05193bca5f`; confirmed-install documentation was added afterward as a separate commit, without moving the tag. The published archive intentionally retains its candidate-era status prose; current installation instructions are on `main`.
 
 ### Breaking changes from unpublished development snapshots
 
@@ -51,4 +53,4 @@ Prepared for the first authorized public release as `contrast-fit@0.1.0`, using 
 ## Earlier repository development (unpublished)
 
 - Initial Adaptive Palette engine and static dashboard demonstration under the former `adaptive-palette` name.
-- Development snapshots also used the manifest label `0.1.0`; they were not separate public releases. The first public release candidate above consolidates that work and the subsequent rename/repairs.
+- Development snapshots also used the manifest label `0.1.0`; they were not separate public releases. The first public release above consolidates that work and the subsequent rename/repairs.
