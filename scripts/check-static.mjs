@@ -29,7 +29,7 @@ async function verify(directory) {
     }
   }
 }
-for (const path of ["index.html", "examples/dashboard/index.html", "docs/index.html", "src/contrast-fit.js", "dist/contrast-fit.js", "dist/contrast-fit.cjs", "dist/contrast-fit.global.js"]) {
+for (const path of ["index.html", "examples/studio/index.html", "examples/studio/studio.js", "examples/studio/studio.css", "examples/dashboard/index.html", "docs/index.html", "src/contrast-fit.js", "dist/contrast-fit.js", "dist/contrast-fit.cjs", "dist/contrast-fit.global.js"]) {
   await access(new URL(path, output));
 }
 await verify(output);

@@ -82,7 +82,7 @@ npm run dev
 
 Open <http://127.0.0.1:4173/>. The development server binds to loopback only.
 
-The demo includes two independently controlled dashboard cards, a one-click mid-gray repair example, applied-background and contrast readouts, distinct chart line/marker encodings, accessible data tables, and a live inspector for the first card's tokens, adjustments, CSS, and JSON output. The [product guide](./docs/index.html) explains the engine separately from the dashboard example.
+The public root opens **[ContrastFit Studio](./examples/studio/index.html)**: an immediately interactive workspace with interface, analytics, and explicitly labeled fixed-palette before/after scenes. Explore auto-fit versus preserve, all four numeric targets, custom chart seeds, 17 semantic tokens, alpha composites, measured checks, separation heuristics, and adjustment records. Export current CSS, full JSON, or runnable JavaScript with a custom prefix; copy and download work without a backend. All results use the actual source engine, not simulated metrics. See the [Studio coverage and limits](./examples/studio/README.md). The [legacy two-dashboard example](./examples/dashboard/index.html) stays available, with its original chart/data/keyboard regression gates. The [product guide](./docs/index.html) explains integration and boundaries.
 
 ### Install from npm
 
@@ -356,7 +356,7 @@ npm run build
 
 The public demo is hosted at <https://prosody007.github.io/contrast-fit/>. On a push to `main`, the CI workflow deploys **only `public/`** to GitHub Pages **after all three Node.js verification jobs and the Chromium job succeed for that exact commit**. Pull requests and manual verification runs do not deploy. Static asset links are relative so the demo also works under the `/contrast-fit/` project path.
 
-You can also deploy `public/` to another static host. The root HTML provides a relative redirect to `examples/dashboard/`, so project-subpath hosting does not require host-specific redirect rules.
+You can also deploy `public/` to another static host. The root HTML provides a relative redirect to `examples/studio/`, so project-subpath hosting does not require host-specific redirect rules.
 
 The core and demo use no analytics, application cookies, remote data fetching, or backend service. Static assets still require HTTP requests, hosting providers can add their own behavior, and repository links open GitHub. The workflow deploys the static demo only; it does **not** publish npm packages, tags, or releases.
 

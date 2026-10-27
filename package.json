@@ -48,7 +48,7 @@
     "typecheck": "npm run build:lib && tsc -p tsconfig.json",
     "package:check": "npm pack --dry-run",
     "package:smoke": "node scripts/package-smoke.mjs",
-    "test:browser": "node test/browser/dashboard-smoke.mjs",
+    "test:browser": "node test/browser/dashboard-smoke.mjs && node test/browser/studio-smoke.mjs",
     "verify": "npm run check && npm run typecheck && npm run test:coverage && npm run build && npm run check:naming && npm run package:smoke",
     "prepack": "npm run build:lib && npm run check:naming",
     "build:lib": "node scripts/build-library.mjs",
