@@ -72,7 +72,19 @@ export function initializeScenes() {
   for (const product of products) {
     const card = node("div", null, { class: "product-card", "data-product": product.id });
     const art = node("div", null, { class: `product-art art-${product.shape}`, "aria-hidden": "true" });
-    art.append(node("span", product.mark, { class: "product-mark" }), node("i"));
+    art.append(node("span", product.mark, { class: "product-mark" }));
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 120 120"); svg.setAttribute("aria-hidden", "true");
+    // Authored vector object studies: decorative, local, and palette-aware.
+    const objects = {
+      vase: '<ellipse class="object-highlight" cx="61" cy="103" rx="26" ry="4"/><path class="object-body" d="M46 26Q60 21 74 26L71 42Q85 56 85 78Q83 101 62 103Q39 102 37 80Q36 57 49 42Z"/><ellipse class="object-highlight" cx="60" cy="26" rx="14" ry="4"/><path class="object-line" d="M47 58Q42 81 51 94M55 29V39"/>',
+      lamp: '<ellipse class="object-body" cx="61" cy="102" rx="27" ry="5"/><path class="object-body" d="M58 46H64V100H58Z"/><path class="object-body" d="M28 49Q32 19 61 18Q90 20 94 49Z"/><ellipse class="object-highlight" cx="61" cy="49" rx="33" ry="5"/><path class="object-line" d="M37 41Q42 27 56 25M56 101H67"/>',
+      book: '<g transform="rotate(-9 60 61)"><path class="object-body" d="M29 20H83L91 27V102H36L29 95Z"/><path class="object-highlight" d="M36 27H91V102H36Z"/><path class="object-line" d="M36 27L29 20M83 20V27M42 33V95M52 43H77M52 49H69M38 97H87"/></g>',
+      tote: '<path class="object-body" d="M29 43H92L98 99Q67 109 25 101Z"/><path class="object-line" d="M43 48V29Q44 16 58 17Q75 18 76 32V47M49 43V30Q49 23 58 23Q69 23 70 32V43M34 49L31 96M89 49L92 96M30 96Q60 102 92 96"/><path class="object-highlight" d="M41 62H82V91H41Z"/>',
+      cup: '<ellipse class="object-highlight" cx="55" cy="99" rx="29" ry="4"/><path class="object-body" d="M78 55Q105 48 103 71Q101 85 79 81V73Q93 75 95 66Q97 58 79 63Z"/><path class="object-body" d="M29 46H82L78 86Q73 99 56 99Q38 98 33 85Z"/><ellipse class="object-highlight" cx="55" cy="46" rx="27" ry="6"/><path class="object-line" d="M38 57L41 81Q43 88 48 89"/>',
+      pouch: '<g transform="rotate(-8 60 66)"><path class="object-body" d="M21 44Q58 36 98 43L102 88Q64 104 19 91Z"/><path class="object-highlight" d="M21 44Q58 35 98 43L96 53Q58 48 22 55Z"/><path class="object-line" d="M27 48L90 47M29 58L27 87M93 58L95 84M84 47V58H90V47M33 88Q58 94 86 87"/></g>',
+    };
+    svg.innerHTML = objects[product.shape]; art.append(svg);
     const title = node("div", null, { class: "product-title" }); title.append(node("h5", product.name), node("strong", money(product.price)));
     card.append(art, title, node("p", product.description, { class: "sample-muted" }), node("button", "+ Add to order", { type: "button", class: "product-add", "data-add": product.id, "aria-label": `+ Add to order: ${product.name}` }));
     $("#product-grid").append(card); productNodes.set(product.id, card);
@@ -96,7 +108,7 @@ export function initializeScenes() {
       add.setAttribute("aria-label", `${add.textContent}: ${product.name}`);
     }
     orderEmpty.hidden = quantity > 0; text("order-count", `${quantity} ${quantity === 1 ? "item" : "items"}`); text("order-total", money(total));
-    text("order-review-status", "Fixture only · no checkout or payment is connected.");
+    text("order-review-status", "Build an order to review locally. No checkout.");
   }
   $("#product-grid").addEventListener("click", (event) => {
     const button = event.target.closest("[data-add]"); if (!button) return;

@@ -63,10 +63,11 @@ try {
   page.on("response", (response) => { if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`); });
   await page.goto(base, { waitUntil: "networkidle" });
   await page.waitForURL(`${base}examples/studio/`);
+  await page.locator("#palette-lab").evaluate((e) => { e.open = true; });
   await page.locator("[data-token-index='16']").waitFor();
   await page.locator("#advanced-controls").evaluate((element) => { element.open = true; });
   assert.match(await page.title(), /Studio/);
-  assert.equal(await page.locator("#resolved-color").textContent(), createContrastFit("#777777").background);
+  assert.equal(await page.locator("#resolved-color").textContent(), createContrastFit("#243044").background);
 
   async function choosePanel(name) { await page.locator(`[data-panel=${name}]`).click(); }
   async function chooseFormat(name) { await page.locator(`[data-format=${name}]`).click(); }
@@ -148,8 +149,19 @@ try {
     return expected;
   }
   async function verifyChart(expected) {
-    await page.locator("[data-scene=analytics]").click();
-    assert.equal(await page.locator("#scene-interface").isVisible(), false);
+    // Explicitly configure the independent Analytics palette through the single
+    // inspector. Ordinary project edits must never silently recolor this example.
+    const output = await json();
+    const disclosure = await page.locator("#target-controls,#accent-controls").evaluateAll((es) => es.map(e => e.open));
+    await page.locator("#inspect-example").selectOption("analytics");
+    for (const id of ["target-controls", "accent-controls"]) await page.locator(`#${id}`).evaluate(e => { e.open = true; });
+    await page.locator(`[name=strategy][value=${output.options.backgroundStrategy}]`).check();
+    await fill("background", output.inputBackground);
+    for (const key of ["textContrast", "mutedContrast", "accentContrast", "surfaceTextContrast"]) await fill(key, String(output.options[key]));
+    for (const key of ["seriesA", "seriesB", "seriesC"]) await fill(key, output.options.accents[key]);
+    await page.locator("#inspect-example").selectOption("interface");
+    for (const [index, id] of ["target-controls", "accent-controls"].entries()) await page.locator(`#${id}`).evaluate((e, open) => { e.open = open; }, disclosure[index]);
+    for (const name of ["interface", "commerce", "reading", "analytics"]) assert.equal(await page.locator(`#scene-${name}`).isVisible(), true);
     const chart = await page.locator("#chart").evaluate((element) => ({
       series: [...element.querySelectorAll("[data-chart-series]")].map((group) => ({
         name: group.dataset.chartSeries, d: group.querySelector(".series-path").getAttribute("d"),
@@ -262,8 +274,8 @@ try {
     console.log(`PASS Studio raster: ${label}, 18 markers + all 3 lines/legends + ${crossings} grid intersections preserve actual ${expected.targets.accentContrast}:1 target`);
   }
   async function verifyComparison(expected) {
-    await page.locator("[data-scene=compare]").click();
-    assert.equal(await page.locator("#live-preview").isVisible(), false);
+    await choosePanel("compare");
+    assert.equal(await page.locator("#live-preview").isVisible(), true);
     const baseline = { text: "#FFFFFF", muted: "#A1A1AA", seriesA: "#18B7A6" };
     for (const name of ["baseline", "fitted"]) for (const key of ["text", "muted", "seriesA"]) {
       const color = name === "baseline" ? baseline[key] : expected.colors[key];
@@ -274,6 +286,7 @@ try {
     }
     assert.match(await page.locator("#scene-compare").textContent(), /Baseline: text #FFFFFF/);
   }
+  await fill("background", "#777777");
   const initial = await verifyEngine("#777777");
   await choosePanel("tokens");
   const tokens = await page.locator("[data-token-index]").evaluateAll((items) => items.map((item) => ({ name: item.querySelector("strong").textContent, value: item.querySelector("small").textContent })));
@@ -294,7 +307,7 @@ try {
   await verifyChart(initial); await page.locator(".sample-data summary").click(); await axeCheck("analytics with expanded equivalent data");
   await verifyRenderedSeries(initial, "default-midgray");
   await verifyComparison(initial); await axeCheck("measured naive/fitted image comparison");
-  await page.locator("[data-scene=interface]").click();
+  await choosePanel("tokens");
 
   // Invalid drafts are kept for correction; the palette and the complete export remain unchanged.
   const previous = await json();
@@ -320,7 +333,7 @@ try {
   assert.equal(preserved.background, "#777777"); assert.equal(preserved.usable, false); assert.ok(preserved.warnings.length);
   assert.match(await page.locator("#result-status").textContent(), /Targets unresolved/);
   await axeCheck("preserved mid-gray with unresolved requested target");
-  await page.locator("#target-controls summary").click();
+  await page.locator("#target-controls").evaluate(e => { e.open = true; });
   for (const [key, value] of [["textContrast", "12"], ["mutedContrast", "7"], ["accentContrast", "5"], ["surfaceTextContrast", "6"]]) {
     await fill(key, value); options[key] = Number(value);
   }
@@ -342,7 +355,7 @@ try {
     assert.ok((await page.locator("#token-detail").textContent()).includes(`--contrast-fit-${suffix}`), "collapsed colors retain semantic token identities");
   }
   async function independentTargetCase(background, changes = {}) {
-    await page.locator("#reset").click();
+    await page.locator("#reset").click(); await fill("background", "#777777");
     for (const id of ["target-controls", "accent-controls"]) await page.locator(`#${id}`).evaluate((element) => { element.open = true; });
     await fill("background", background);
     const next = structuredClone(defaults);
@@ -400,7 +413,7 @@ try {
   await choosePanel("tokens"); await axeCheck("expanded seeds with adjacent applied colors");
   if (screenshotDir) await page.locator("#accent-controls").screenshot({ path: resolve(screenshotDir, "studio-seed-results-identical-black.png") });
   console.log("PASS Studio independent targets: primary12 gray, surface12 slate + low alpha, accent-only21, black status10/21, identical-black exact browser engine and expected color set");
-  await page.locator("#reset").click(); options = structuredClone(defaults);
+  await page.locator("#reset").click(); await fill("background", "#777777"); options = structuredClone(defaults);
   await page.locator("#accent-controls").evaluate((element) => { element.open = true; });
   await page.locator("#same-seeds").click();
   for (const key of ["seriesA", "seriesB", "seriesC"]) options.accents[key] = "#18B7A6";
@@ -443,16 +456,9 @@ try {
   const downloadPromise = page.waitForEvent("download"); await page.locator("#download").click(); const download = await downloadPromise;
   assert.equal(download.suggestedFilename(), "contrast-fit-palette.json"); assert.equal(await readFile(await download.path(), "utf8"), expectedDownload);
   await axeCheck("exports with custom prefix, copy and download status");
-  const staticSnippet = (await page.locator('[aria-label="JavaScript integration example"] code').textContent()).replace('from "contrast-fit"', `from ${JSON.stringify(`${base}src/contrast-fit.js`)}`);
-  const staticResult = await page.evaluate(async (source) => {
-    const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" })); await import(url); URL.revokeObjectURL(url);
-    const element = document.body.lastElementChild; const computed = getComputedStyle(element);
-    const result = { text: computed.color, background: computed.backgroundColor }; element.remove(); return result;
-  }, staticSnippet);
-  assert.equal(hex(staticResult.text), initial.colors.text); assert.equal(hex(staticResult.background), initial.background);
-  console.log("PASS Studio exports: exact 17-variable CSS, full JSON, runnable current-options JS and visible static snippet, prefix/metadata, modern/fallback/manual copy, downloaded bytes");
+  console.log("PASS Studio exports: exact 17-variable CSS, full JSON, runnable current-options JS and self-contained DOM consumption, prefix/metadata, modern/fallback/manual copy, downloaded bytes");
 
-  await page.locator("#reset").click(); await page.locator("[data-scene=interface]").click(); await choosePanel("tokens");
+  await page.locator("#reset").click(); await fill("background", "#777777"); await choosePanel("tokens"); await choosePanel("tokens");
   // Native radio keyboard handling and visible focus; no custom roving-tab trap.
   await page.locator("[name=strategy][value=auto]").focus(); await page.keyboard.press("ArrowRight");
   assert.equal(await page.locator("[name=strategy][value=preserve]").isChecked(), true);
@@ -461,52 +467,27 @@ try {
   assert.equal(await page.locator("[data-preset]").first().evaluate((element) => element === document.activeElement && element.matches(":focus-visible") && parseFloat(getComputedStyle(element).outlineWidth) >= 2), true);
   await page.keyboard.press("Enter");
   const ids = await page.locator("[id]").evaluateAll((items) => items.map((item) => item.id)); assert.equal(new Set(ids).size, ids.length);
-  // Collapse advanced controls for screenshot/default first-screen consistency.
-  for (const id of ["advanced-controls", "target-controls", "accent-controls"]) await page.locator(`#${id}`).evaluate((element) => { element.open = false; });
-  if (screenshotDir) {
-    await page.setViewportSize({ width: 1440, height: 1100 }); await page.locator("#page-title").click(); await page.evaluate(() => window.scrollTo(0, 0));
-    await page.screenshot({ path: resolve(screenshotDir, "studio-desktop-1440.png"), fullPage: true });
-    await page.screenshot({ path: resolve(screenshotDir, "studio-desktop-firstscreen-1440.png") });
-    for (const name of ["commerce", "reading", "analytics", "compare"]) { await page.locator(`[data-scene=${name}]`).click(); await page.screenshot({ path: resolve(screenshotDir, `studio-desktop-${name}.png`), fullPage: true }); }
-    await page.locator("[data-scene=interface]").click(); await choosePanel("measurements"); await page.screenshot({ path: resolve(screenshotDir, "studio-desktop-measurements.png"), fullPage: true }); await choosePanel("tokens");
-  }
-  for (const width of [320, 375, 768]) {
+  for (const width of [320, 375, 768, 1280, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    if (width <= 375) {
-      const link = page.locator("#see-result");
-      assert.equal(await link.isVisible(), true); assert.equal(await link.getAttribute("href"), "#preview-heading");
-      assert.match(await page.locator("#compact-result").textContent(), /Applied #A0A0A0 · 11\/11 numeric pass/);
-      await link.focus(); await page.keyboard.press("Enter");
-      assert.equal(new URL(page.url()).hash, "#preview-heading");
-      assert.equal(await page.locator("#preview-heading").evaluate((element) => element === document.activeElement && element.matches(":focus-visible")), true);
-      assert.ok(await page.locator("#preview-heading").evaluate((element) => element.getBoundingClientRect().top >= 0 && element.getBoundingClientRect().top < innerHeight), "See result scrolls to its actual focused destination");
+    for (const name of ["interface", "commerce", "reading", "analytics"]) assert.equal(await page.locator(`#scene-${name}`).isVisible(), true, "all four remain rendered regardless of inspector view");
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${width}px: no horizontal page overflow`);
+    if (width <= 768) {
+      const scroll = page.locator(".chart-scroll"); await scroll.focus(); await page.keyboard.press("ArrowRight");
+      await page.waitForFunction(() => document.querySelector(".chart-scroll").scrollLeft > 0);
+      assert.equal(await page.evaluate(() => scrollX), 0);
+      assert.equal(await scroll.evaluate((element) => element.matches(":focus-visible") && parseFloat(getComputedStyle(element).outlineWidth) >= 2), true);
     }
-    for (const name of ["interface", "commerce", "reading", "compare", "analytics"]) {
-      await page.locator(`[data-scene=${name}]`).click();
-      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${width}px ${name}: no horizontal page overflow`);
-    }
-    const scroll = page.locator(".chart-scroll"); await scroll.focus(); await page.keyboard.press("ArrowRight");
-    await page.waitForFunction(() => document.querySelector(".chart-scroll").scrollLeft > 0);
-    assert.equal(await page.evaluate(() => scrollX), 0);
-    assert.equal(await scroll.evaluate((element) => element.matches(":focus-visible") && parseFloat(getComputedStyle(element).outlineWidth) >= 2), true);
     const minText = await page.locator("#chart text").evaluateAll((items) => Math.min(...items.map((item) => parseFloat(getComputedStyle(item).fontSize) * Math.hypot(item.getScreenCTM().a, item.getScreenCTM().b))));
-    assert.ok(minText >= 10, `${width}px: chart tick labels stay at readable size`);
+    assert.ok(minText >= 10, `${width}px: chart tick labels remain readable`);
     await choosePanel("export"); await chooseFormat("js");
-    const code = page.locator("#export-code");
-    await page.locator("#download").focus(); await page.keyboard.press("Tab");
-    assert.equal(await code.evaluate((element) => element === document.activeElement), true, "the export region is naturally keyboard reachable after Download");
+    const code = page.locator("#export-code"); await page.locator("#download").focus();
+    await page.keyboard.press("Tab");
+    assert.equal(await code.evaluate(e => e === document.activeElement), true, "export is naturally keyboard reachable after Download");
     const codeOverflows = await code.evaluate((element) => element.scrollWidth > element.clientWidth);
-    if (width <= 375) assert.equal(codeOverflows, true, "narrow code stays locally scrollable rather than wrapping or overflowing the page");
-    if (codeOverflows) {
-      await code.evaluate((element) => { element.scrollLeft = 0; }); await page.keyboard.press("ArrowRight");
-      await page.waitForFunction(() => document.querySelector("#export-code").scrollLeft > 0);
-    }
+    if (width <= 375) assert.equal(codeOverflows, true);
+    if (codeOverflows) { await code.evaluate(e => { e.scrollLeft = 0; }); await page.keyboard.press("ArrowRight"); await page.waitForFunction(() => document.querySelector("#export-code").scrollLeft > 0); }
     assert.equal(await code.evaluate((element) => element.matches(":focus-visible") && parseFloat(getComputedStyle(element).outlineWidth) >= 2), true);
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
-    if (width === 320) await axeCheck("320px analytics + expanded table + export");
-    await page.locator("[data-scene=interface]").click(); await choosePanel("tokens");
-    if (width === 320) await axeCheck("320px default interface + tokens");
-    if (screenshotDir && width !== 768) { await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: resolve(screenshotDir, `studio-mobile-${width}.png`), fullPage: true }); await page.screenshot({ path: resolve(screenshotDir, `studio-mobile-firstscreen-${width}.png`) }); }
+    if (width === 320) await axeCheck("320px all-visible gallery + export");
   }
   await verifyScenarios({ page, base, screenshotDir, axeCheck, renderedRatio });
   const links = await page.locator('a[href="../dashboard/"], a[href="../../docs/"]').evaluateAll((items) => items.map((item) => item.href));

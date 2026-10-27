@@ -8,19 +8,29 @@ const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const VERSION = "0.1.0";
 const DEFAULTS = {
-  background: "#777777",
+  background: "#243044",
   options: { backgroundStrategy: "auto", textContrast: 8, mutedContrast: 4.7,
     accentContrast: 3.3, surfaceTextContrast: 4.5,
     accents: { seriesA: "#18B7A6", seriesB: "#F06B8A", seriesC: "#8F7DFF" } },
   prefix: "contrast-fit",
 };
-let state = structuredClone(DEFAULTS);
-let palette = createContrastFit(state.background, state.options);
-let scene = "interface";
+const examples = {
+  interface: { name: "Project workspace", background: "#243044", preview: "#live-preview", frame: "#preview-frame" },
+  commerce: { name: "Commerce desk", background: "#F4EFE5", preview: "#commerce-preview", frame: "#commerce-frame" },
+  reading: { name: "Reading room", background: "#FCFCF9", preview: "#reading-preview", frame: "#reading-frame" },
+  analytics: { name: "Analytics", background: "#101D29", preview: "#analytics-preview", frame: "#analytics-frame" },
+};
+const models = Object.fromEntries(Object.entries(examples).map(([key, example]) => {
+  const state = { ...structuredClone(DEFAULTS), background: example.background };
+  return [key, { state, palette: createContrastFit(state.background, state.options), drafts: {}, errors: new Map() }];
+}));
+let active = "interface";
+let state = models[active].state;
+let palette = models[active].palette;
 let panel = "tokens";
 let format = "css";
 let selectedToken = 1;
-const errors = new Map();
+let errors = models[active].errors;
 const targetKeys = ["textContrast", "mutedContrast", "accentContrast", "surfaceTextContrast"];
 const seriesKeys = ["seriesA", "seriesB", "seriesC"];
 const fixture = [
@@ -86,6 +96,7 @@ function currentValue(id) {
 // CSS, the preview, or exports. Draft strings are left intact while typing.
 function acceptField(id, canonicalize = false) {
   const input = $(`#${id}`);
+  models[active].drafts[id] = input.value;
   const candidate = structuredClone(state);
   let value;
   if (targetKeys.includes(id)) {
@@ -110,7 +121,9 @@ function acceptField(id, canonicalize = false) {
   palette = next;
   setError(id);
   if (canonicalize) input.value = String(value);
-  if (id === "prefix") renderExport(); else render();
+  models[active].drafts[id] = input.value;
+  if (id === "prefix") { models[active].state = state; renderExport(); }
+  else render();
 }
 for (const id of ["background", ...targetKeys, ...seriesKeys, "prefix"]) {
   const input = $(`#${id}`);
@@ -118,7 +131,7 @@ for (const id of ["background", ...targetKeys, ...seriesKeys, "prefix"]) {
   input.addEventListener("blur", () => acceptField(id, true));
   input.addEventListener("keydown", (event) => {
     if (event.key === "Enter") { event.preventDefault(); acceptField(id, true); }
-    if (event.key === "Escape") { input.value = String(currentValue(id)); setError(id); }
+    if (event.key === "Escape") { input.value = String(currentValue(id)); models[active].drafts[id] = input.value; setError(id); renderExample(active); }
   });
 }
 function update(next) {
@@ -138,40 +151,81 @@ for (const radio of $$("[name=strategy]")) radio.addEventListener("change", () =
 });
 $("#extreme-targets").addEventListener("click", () => {
   const next = structuredClone(state);
-  for (const key of targetKeys) { next.options[key] = 21; $(`#${key}`).value = "21"; setError(key); }
+  for (const key of targetKeys) { next.options[key] = 21; $(`#${key}`).value = "21"; models[active].drafts[key] = "21"; setError(key); }
   update(next);
 });
 $("#same-seeds").addEventListener("click", () => {
   const next = structuredClone(state);
-  for (const key of seriesKeys) { next.options.accents[key] = "#18B7A6"; $(`#${key}`).value = "#18B7A6"; setError(key); }
+  for (const key of seriesKeys) { next.options.accents[key] = "#18B7A6"; $(`#${key}`).value = "#18B7A6"; models[active].drafts[key] = "#18B7A6"; setError(key); }
   update(next);
 });
-$("#reset").addEventListener("click", () => {
-  state = structuredClone(DEFAULTS);
-  selectedToken = 1;
-  for (const id of ["background", ...targetKeys, ...seriesKeys, "prefix"]) { $(`#${id}`).value = String(currentValue(id)); setError(id); }
-  $("[name=strategy][value=auto]").checked = true;
-  update(state);
-  text("input-status", "Default palette and controls restored.");
-});
-initializeScenes();
-function selectScene(value) {
-  scene = value;
-  for (const button of $$("[data-scene]")) {
-    button.setAttribute("aria-pressed", String(button.dataset.scene === scene));
-    button.classList.toggle("is-active", button.dataset.scene === scene);
+function resetPalette(key) {
+  const model = models[key];
+  model.state = { ...structuredClone(DEFAULTS), background: examples[key].background };
+  model.palette = createContrastFit(model.state.background, model.state.options);
+  model.drafts = {}; model.errors.clear();
+  if (key === active) {
+    state = model.state; palette = model.palette; selectedToken = 1;
+    syncTools(); renderTools(); text("input-status", `${examples[key].name} default palette restored. Application state retained.`);
   }
-  for (const id of ["interface", "commerce", "reading", "analytics", "compare"]) $(`#scene-${id}`).hidden = scene !== id;
-  $("#live-preview").hidden = scene === "compare";
+  renderExample(key);
 }
-for (const button of $$("[data-scene]")) button.addEventListener("click", () => {
-  selectScene(button.dataset.scene);
-  if (matchMedia("(max-width: 620px)").matches) $("#preview-frame").scrollIntoView({ block: "start" });
+$("#reset").addEventListener("click", () => resetPalette(active));
+for (const button of $$("[data-example-reset]")) button.addEventListener("click", () => resetPalette(button.dataset.exampleReset));
+initializeScenes();
+function syncTools() {
+  for (const id of ["background", ...targetKeys, ...seriesKeys, "prefix"]) {
+    $(`#${id}`).value = models[active].drafts[id] ?? String(currentValue(id));
+    const message = errors.get(id) ?? "";
+    $(`#${id}`).setAttribute("aria-invalid", String(Boolean(message)));
+    $(`#${id}-error`).textContent = message; $(`#${id}-error`).hidden = !message;
+  }
+  $(`[name=strategy][value=${state.options.backgroundStrategy}]`).checked = true;
+  $("#inspect-example").value = active;
+}
+function inspectExample(key) {
+  active = key; state = models[key].state; palette = models[key].palette; errors = models[key].errors;
+  syncTools(); renderTools();
+}
+$("#inspect-example").addEventListener("change", (event) => inspectExample(event.target.value));
+for (const button of $$("[data-inspect]")) button.addEventListener("click", () => {
+  inspectExample(button.dataset.inspect); $("#palette-lab").open = true;
+  $("#inspector-title").focus();
+});
+function acceptExample(key, canonicalize = false) {
+  const model = models[key], input = $(`#${key}-background`);
+  model.drafts.background = input.value;
+  const background = normalizeHex(input.value);
+  if (!background) model.errors.set("background", "Use an opaque 3- or 6-digit hex color. Last valid palette retained.");
+  else {
+    model.errors.delete("background");
+    model.state = { ...model.state, background };
+    model.palette = createContrastFit(background, model.state.options);
+    if (canonicalize) model.drafts.background = input.value = background;
+  }
+  if (key === active) { state = model.state; palette = model.palette; syncTools(); renderTools(); }
+  renderExample(key);
+}
+for (const [key] of Object.entries(examples)) {
+  const input = $(`#${key}-background`);
+  input.addEventListener("input", () => acceptExample(key));
+  input.addEventListener("blur", () => acceptExample(key, true));
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); acceptExample(key, true); }
+    if (event.key === "Escape") {
+      input.value = models[key].state.background; models[key].drafts.background = input.value; models[key].errors.delete("background");
+      renderExample(key); if (key === active) syncTools();
+    }
+  });
+  $(`#${key}-picker`).addEventListener("input", (event) => { input.value = event.target.value; acceptExample(key, true); });
+}
+for (const button of $$("[data-example-preset]")) button.addEventListener("click", () => {
+  $(`#${button.dataset.examplePreset}-background`).value = button.dataset.color; acceptExample(button.dataset.examplePreset, true);
 });
 for (const button of $$("[data-panel]")) button.addEventListener("click", () => {
   panel = button.dataset.panel;
   for (const item of $$("[data-panel]")) item.setAttribute("aria-pressed", String(item.dataset.panel === panel));
-  for (const id of ["tokens", "measurements", "export"]) $(`#panel-${id}`).hidden = panel !== id;
+  for (const id of ["tokens", "measurements", "export", "compare"]) $(`#panel-${id}`).hidden = panel !== id;
 });
 for (const button of $$("[data-format]")) button.addEventListener("click", () => {
   format = button.dataset.format;
@@ -185,7 +239,7 @@ function marker(shape, x, y, color, size = 2, halo = false) {
   if (shape === "square") return `<rect ${attributes} x="${x - size}" y="${y - size}" width="${size * 2}" height="${size * 2}"/>`;
   return `<path ${attributes} d="M${x} ${y - size - 1}l${size + 1} ${size + 1}l-${size + 1} ${size + 1}l-${size + 1} -${size + 1}Z"/>`;
 }
-function renderChart() {
+function renderChart(palette) {
   const x = (index) => 48 + index * 116;
   const y = (value) => 228 - value * 2.1;
   const points = (index) => fixture.map((row, period) => `${period ? "L" : "M"}${x(period)} ${y(row.values[index])}`).join(" ");
@@ -351,16 +405,35 @@ $("#download").addEventListener("click", () => {
   } catch { text("export-status", "Download unavailable in this browser. Use Copy code or select the code manually."); }
 });
 
-// Keep a real fragment link (including no-script semantics) and move keyboard focus
-// to its destination without competing with the browser's native anchor scrolling.
-$("#see-result").addEventListener("click", () => $("#preview-heading").focus({ preventScroll: true }));
-
+// Each palette owns only its example. Existing issue/order/reading nodes are never
+// replaced by palette rendering. The single inspector reads a selected record.
+function renderExample(key) {
+  const model = models[key], value = model.palette, example = examples[key];
+  const preview = $(example.preview); applyPaletteToElement(preview, value);
+  preview.dataset.resolved = value.background; preview.dataset.usable = String(value.usable);
+  $(example.frame).style.setProperty("--input-bg", value.inputBackground);
+  $(example.frame).dataset.input = value.inputBackground;
+  $(`#${key}-picker`).value = value.inputBackground;
+  $(`#${key}-background`).value = model.drafts.background ?? model.state.background;
+  const error = model.errors.get("background") ?? "";
+  $(`#${key}-background`).setAttribute("aria-invalid", String(Boolean(error)));
+  $(`#${key}-error`).textContent = error; $(`#${key}-error`).hidden = !error;
+  const count = checks.filter(([flag]) => value.meetsTarget[flag]).length;
+  const low = ["textContrast", "mutedContrast", "surfaceTextContrast"].some((target) => value.targets[target] < 4.5);
+  text(`${key}-feedback`, [
+    value.background !== value.inputBackground ? `Applied ${value.background}` : "",
+    !value.usable ? `Targets unresolved · ${11 - count} checks fail` : "",
+    low ? "Experimental low text targets" : "",
+    key === "analytics" && !value.meetsTarget.seriesDistinct ? "Color-only separation fails" : "",
+  ].filter(Boolean).join(" · "));
+  for (const button of $$(`[data-example-preset=${key}]`)) button.setAttribute("aria-pressed", String(button.dataset.color === model.state.background));
+  if (key === "analytics") renderChart(value);
+}
 function render() {
-  applyPaletteToElement($("#live-preview"), palette);
-  $("#preview-frame").style.setProperty("--input-bg", palette.inputBackground);
-  $("#preview-frame").dataset.input = palette.inputBackground;
-  $("#live-preview").dataset.resolved = palette.background;
-  $("#live-preview").dataset.usable = String(palette.usable);
+  models[active].state = state; models[active].palette = palette;
+  renderExample(active); renderTools();
+}
+function renderTools() {
   $("#background-picker").value = palette.inputBackground;
   $("#chosen-swatch").style.background = palette.inputBackground;
   $("#resolved-swatch").style.background = palette.background;
@@ -369,9 +442,6 @@ function render() {
   text("strategy-hint", state.options.backgroundStrategy === "auto" ? "Allow content to adjust when the chosen color cannot support your targets." : "Keep the exact input background. Some requested targets may remain unresolved; inspect the measurements.");
   for (const button of $$("[data-preset]")) button.setAttribute("aria-pressed", String(button.dataset.preset === state.background));
   const count = checks.filter(([key]) => palette.meetsTarget[key]).length;
-  const compactSwatch = node("i", null, { "aria-hidden": "true" });
-  compactSwatch.style.background = palette.background;
-  $("#compact-result").replaceChildren(compactSwatch, node("span", `Applied ${palette.background} · ${count}/11 numeric pass`));
   for (const key of seriesKeys) {
     const output = $(`#${key}-applied`);
     const retained = state.options.accents[key] === palette.colors[key];
@@ -388,6 +458,7 @@ function render() {
   const status = $("#result-status"); status.dataset.state = palette.usable ? "success" : "warning";
   status.replaceChildren(node("strong", palette.usable ? (palette.background !== palette.inputBackground ? "Auto-fit complete. " : "Numeric targets satisfied. ") : "Targets unresolved. "), node("span", !palette.usable ? `${checks.length - count} numeric checks fail with the current options. ${palette.warnings[0] ?? "Inspect measurements for details."}` : !palette.meetsTarget.seriesDistinct ? "All numeric checks pass, but color-only series separation fails. Use the supplied patterns and markers." : palette.background !== palette.inputBackground ? "Content adjusted to support your targets. Your chosen color stays on the frame; targets stay intact." : "Background retained. Measurements and series separation are available below; this is not a whole-page audit."));
   $("#experimental-warning").hidden = !["textContrast", "mutedContrast", "surfaceTextContrast"].some((key) => palette.targets[key] < 4.5);
-  renderChart(); renderComparison(); renderTokens(); renderMeasurements(); renderExport(); selectScene(scene);
+  renderComparison(); renderTokens(); renderMeasurements(); renderExport();
 }
-render();
+for (const key of Object.keys(examples)) renderExample(key);
+syncTools(); renderTools();
