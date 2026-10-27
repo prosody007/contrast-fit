@@ -2,6 +2,7 @@ import {
   createContrastFit, applyPaletteToElement, paletteToCssVariables,
   normalizeHex, parseHex, contrastRatio,
 } from "../../src/contrast-fit.js";
+import { initializeScenes } from "./scenes.js";
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -153,13 +154,20 @@ $("#reset").addEventListener("click", () => {
   update(state);
   text("input-status", "Default palette and controls restored.");
 });
+initializeScenes();
 function selectScene(value) {
   scene = value;
-  for (const button of $$("[data-scene]")) button.setAttribute("aria-pressed", String(button.dataset.scene === scene));
-  for (const id of ["interface", "analytics", "compare"]) $(`#scene-${id}`).hidden = scene !== id;
+  for (const button of $$("[data-scene]")) {
+    button.setAttribute("aria-pressed", String(button.dataset.scene === scene));
+    button.classList.toggle("is-active", button.dataset.scene === scene);
+  }
+  for (const id of ["interface", "commerce", "reading", "analytics", "compare"]) $(`#scene-${id}`).hidden = scene !== id;
   $("#live-preview").hidden = scene === "compare";
 }
-for (const button of $$("[data-scene]")) button.addEventListener("click", () => selectScene(button.dataset.scene));
+for (const button of $$("[data-scene]")) button.addEventListener("click", () => {
+  selectScene(button.dataset.scene);
+  if (matchMedia("(max-width: 620px)").matches) $("#preview-frame").scrollIntoView({ block: "start" });
+});
 for (const button of $$("[data-panel]")) button.addEventListener("click", () => {
   panel = button.dataset.panel;
   for (const item of $$("[data-panel]")) item.setAttribute("aria-pressed", String(item.dataset.panel === panel));
@@ -379,6 +387,7 @@ function render() {
   text("checks-result", `${count} / ${checks.length} pass`);
   const status = $("#result-status"); status.dataset.state = palette.usable ? "success" : "warning";
   status.replaceChildren(node("strong", palette.usable ? (palette.background !== palette.inputBackground ? "Auto-fit complete. " : "Numeric targets satisfied. ") : "Targets unresolved. "), node("span", !palette.usable ? `${checks.length - count} numeric checks fail with the current options. ${palette.warnings[0] ?? "Inspect measurements for details."}` : !palette.meetsTarget.seriesDistinct ? "All numeric checks pass, but color-only series separation fails. Use the supplied patterns and markers." : palette.background !== palette.inputBackground ? "Content adjusted to support your targets. Your chosen color stays on the frame; targets stay intact." : "Background retained. Measurements and series separation are available below; this is not a whole-page audit."));
+  $("#experimental-warning").hidden = !["textContrast", "mutedContrast", "surfaceTextContrast"].some((key) => palette.targets[key] < 4.5);
   renderChart(); renderComparison(); renderTokens(); renderMeasurements(); renderExport(); selectScene(scene);
 }
 render();

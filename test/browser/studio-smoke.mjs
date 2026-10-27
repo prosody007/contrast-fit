@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import axe from "axe-core";
 import { createContrastFit, paletteToCssVariables, contrastRatio, parseHex } from "../../src/contrast-fit.js";
+import { verifyScenarios } from "./studio-scenarios.mjs";
 
 const args = process.argv.slice(2);
 assert.ok(args.every((arg) => arg === "--source" || arg.startsWith("--screenshots=")), "Usage: studio-smoke.mjs [--source] [--screenshots=/absolute/path]");
@@ -63,6 +64,7 @@ try {
   await page.goto(base, { waitUntil: "networkidle" });
   await page.waitForURL(`${base}examples/studio/`);
   await page.locator("[data-token-index='16']").waitFor();
+  await page.locator("#advanced-controls").evaluate((element) => { element.open = true; });
   assert.match(await page.title(), /Studio/);
   assert.equal(await page.locator("#resolved-color").textContent(), createContrastFit("#777777").background);
 
@@ -460,12 +462,12 @@ try {
   await page.keyboard.press("Enter");
   const ids = await page.locator("[id]").evaluateAll((items) => items.map((item) => item.id)); assert.equal(new Set(ids).size, ids.length);
   // Collapse advanced controls for screenshot/default first-screen consistency.
-  for (const id of ["target-controls", "accent-controls"]) await page.locator(`#${id}`).evaluate((element) => { element.open = false; });
+  for (const id of ["advanced-controls", "target-controls", "accent-controls"]) await page.locator(`#${id}`).evaluate((element) => { element.open = false; });
   if (screenshotDir) {
     await page.setViewportSize({ width: 1440, height: 1100 }); await page.locator("#page-title").click(); await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ path: resolve(screenshotDir, "studio-desktop-1440.png"), fullPage: true });
     await page.screenshot({ path: resolve(screenshotDir, "studio-desktop-firstscreen-1440.png") });
-    for (const name of ["analytics", "compare"]) { await page.locator(`[data-scene=${name}]`).click(); await page.screenshot({ path: resolve(screenshotDir, `studio-desktop-${name}.png`), fullPage: true }); }
+    for (const name of ["commerce", "reading", "analytics", "compare"]) { await page.locator(`[data-scene=${name}]`).click(); await page.screenshot({ path: resolve(screenshotDir, `studio-desktop-${name}.png`), fullPage: true }); }
     await page.locator("[data-scene=interface]").click(); await choosePanel("measurements"); await page.screenshot({ path: resolve(screenshotDir, "studio-desktop-measurements.png"), fullPage: true }); await choosePanel("tokens");
   }
   for (const width of [320, 375, 768]) {
@@ -479,7 +481,7 @@ try {
       assert.equal(await page.locator("#preview-heading").evaluate((element) => element === document.activeElement && element.matches(":focus-visible")), true);
       assert.ok(await page.locator("#preview-heading").evaluate((element) => element.getBoundingClientRect().top >= 0 && element.getBoundingClientRect().top < innerHeight), "See result scrolls to its actual focused destination");
     }
-    for (const name of ["interface", "compare", "analytics"]) {
+    for (const name of ["interface", "commerce", "reading", "compare", "analytics"]) {
       await page.locator(`[data-scene=${name}]`).click();
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${width}px ${name}: no horizontal page overflow`);
     }
@@ -506,6 +508,7 @@ try {
     if (width === 320) await axeCheck("320px default interface + tokens");
     if (screenshotDir && width !== 768) { await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: resolve(screenshotDir, `studio-mobile-${width}.png`), fullPage: true }); await page.screenshot({ path: resolve(screenshotDir, `studio-mobile-firstscreen-${width}.png`) }); }
   }
+  await verifyScenarios({ page, base, screenshotDir, axeCheck, renderedRatio });
   const links = await page.locator('a[href="../dashboard/"], a[href="../../docs/"]').evaluateAll((items) => items.map((item) => item.href));
   for (const url of links) assert.equal((await context.request.get(url)).status(), 200, "project-subpath docs/legacy route works");
   assert.deepEqual(errors, [], `No console, network, or page errors: ${JSON.stringify(errors)}`);

@@ -1,6 +1,6 @@
 # ContrastFit Studio
 
-A source-driven, framework-free interactive workspace for ContrastFit 0.1.0. The site root redirects here with a relative URL, including on GitHub Pages under `/contrast-fit/`. The [original dashboard](../dashboard/index.html) and its browser regression remain intact.
+A scene-first, source-driven, framework-free interactive workspace for ContrastFit 0.1.0. The site root redirects here with a relative URL, including on GitHub Pages under `/contrast-fit/`. The [original dashboard](../dashboard/index.html) and its browser regression remain intact.
 
 ## Feature map
 
@@ -10,16 +10,18 @@ A source-driven, framework-free interactive workspace for ContrastFit 0.1.0. The
 | Auto-fit / Preserve | `backgroundStrategy`; original chosen color on the frame, resolved content on the preview; honest unresolved targets in preserve mode |
 | Four advanced numeric fields | `textContrast`, `mutedContrast`, `accentContrast`, `surfaceTextContrast`, accepted in `[1, 21]`; atomic stress-test preset at 21:1 |
 | Three custom seed fields | `options.accents`; identical-seed experiment; adjacent actual applied color chips/hex plus Seed retained / Adjusted compared with each last-valid preference |
-| Interface scene | Actual text, muted copy, metric and panel surfaces, dividers, positive and attention status pairs, using `applyPaletteToElement` |
+| Project workspace (default) | Filterable issue queue/count, selected task details with owner/priority/next move, empty state, Enter/Escape/close focus return; primary/muted, independent metric/panel surfaces, named opaque status pairs |
+| Commerce desk | Category-filtered six-product catalogue, local Add/quantity/remove order builder with integer-cent arithmetic, itemized subtotals and actual total, truthful local review/no checkout; metric product tiles and independent panel summary |
+| Reading room | Editorial typography, real chapter anchors that focus headings, compact mobile contents disclosure, inline link/callout, semantic local Reading list toggle; primary body and muted metadata with a once-composited panel callout |
 | Analytics scene | Six-period illustrative fixture, labeled axes, shared score scale, three paths, returned dash/marker encodings in paths and legend, opaque resolved-background knockouts behind each data mark, accessible equivalent data table |
-| Before / after | Explicitly naive fixed white/muted/series palette on the chosen background; actual ContrastFit output on the resolved background; both sets of ratios computed with the exported contrast utility |
+| Before / after comparison mode (not a domain) | Explicitly naive fixed white/muted/series palette on the chosen background; actual ContrastFit output on the resolved background; both sets of ratios computed with the exported contrast utility |
 | Token explorer | All 17 authored colors, semantic relationships, CSS names, source hex, alpha, effective composite, measured ratio where defined |
 | Measurements | All 11 numeric flags with actual/target values; separate RGB/OKLab distances and `seriesDistinct`; original adjustment and warning records |
 | Export | CSS variables, full version/options/palette/variables JSON, runnable browser JavaScript; validated custom CSS prefix; clipboard, legacy fallback, manual-copy recovery, local downloads |
-| Mobile result access | Compact live applied background / numeric-check hint and a real See result fragment link that scrolls and focuses the preview heading |
+| Scene-first / mobile | Compact shared background bar; four descriptive context choices; initial 320×740 and 375×812 folds include actual project title, task row and filter/action. Mobile scene selection reveals the changed scene. Advanced strategy/targets/seeds and palette lab are secondary. A real See result anchor scrolls/focuses the chooser heading |
 | Integration | Published `0.1.0` install command; runnable ESM + DOM adapter example that explicitly consumes both background and foreground; links to docs, npm, source, and legacy example |
 
-Every preview and export derives from imports of [`src/contrast-fit.js`](../../src/contrast-fit.js). No engine code, algorithm, API, dependency, release version, or package publication is changed for the Studio. Export prefixes affect the exported contract, not the Studio's own fixed-prefix preview styles. Input drafts never get injected as HTML. No runtime libraries, fonts, images, analytics, persistence, or remote color services are used.
+Every preview and export derives from imports of [`src/contrast-fit.js`](../../src/contrast-fit.js). No engine code, algorithm, API, dependency, release version, or package publication is changed for the Studio. Export prefixes affect the exported contract, not the Studio's own fixed-prefix preview styles. Input drafts never get injected as HTML. `scenes.js` initializes stable fixture nodes once with delegated events; palette changes apply CSS variables without replacing task/order/reading controls, so selection, quantities, saved state, and focus persist. Reset palette resets only engine controls/tokens, never the order or reading state. No runtime libraries, fonts, images, analytics, persistence, or remote color services are used.
 
 ## Verification
 
@@ -29,16 +31,17 @@ npm run test:browser
 npm run package:smoke -- --browser
 ```
 
-`test:browser` runs the retained dashboard/docs gate **and** the new Studio gate. The latter serves the built site at a real `/contrast-fit/` mount, verifies root navigation, compares source-engine results to JSON and computed preview colors, exercises targets/seeds/warnings/scenes/exports/input recovery, tests keyboard and narrow layouts, and runs axe serious/critical checks. Independent target cases cover gray primary12, slate surface12 with the other targets1, accent-only21, black status10/21, and identical seeds on black. For source-only iteration: `node test/browser/studio-smoke.mjs --source`.
+`test:browser` runs the retained dashboard/docs gate **and** the new Studio gate. The latter serves the built site at a real `/contrast-fit/` mount, verifies root navigation, compares source-engine results to JSON and computed preview colors, exercises targets/seeds/warnings/scenes/exports/input recovery, tests keyboard and narrow layouts, and runs axe serious/critical checks. `studio-scenarios.mjs` additionally exercises complete domain loops, exact mobile/desktop first folds, node/focus/state retention, and 23 independently computed foreground/backdrop pairs across defaults, preserve-unresolved, surface12/others1, accent-only21, and all21. At intentionally low text targets, only color-contrast failures within the experimental preview are identified as intentional; shell and control semantics remain checked. Independent target cases cover gray primary12, slate surface12 with the other targets1, accent-only21, black status10/21, and identical seeds on black. For source-only iteration: `node test/browser/studio-smoke.mjs --source`.
 
 The chart gate decodes actual Chromium PNG screenshots through a canvas. It samples real line/marker/legend pixels and the real backing at the same coordinates, temporarily hiding only foreground data marks while keeping their opaque knockouts and decoration in place. Default, accent-only21, and all-targets21 cases must meet their requested contrast with an independent sRGB/WCAG calculation, including every data/grid intersection. Grid/axis boundaries must remain visibly rendered. This deliberately tests the compositing boundary, not just CSS stroke hex or engine metrics.
 
-Optional local screenshot capture (not committed): `node test/browser/studio-smoke.mjs --screenshots=/absolute/artifact/directory`. It captures desktop 1440, mobile 375, and mobile 320 defaults plus analytics, comparison, and measurements states.
+Optional local screenshot capture (not committed): `node test/browser/studio-smoke.mjs --screenshots=/absolute/artifact/directory`. It captures desktop 1440, exact 320×740 / 375×812 initial folds, each selected domain desktop/mobile, Analytics/comparison/measurements, and independent pixel/color proof JSON.
 
 ## Honest limits
 
-- Fixture project counts, scores, and labels are illustrative—not a backend, live account, or a tested production application. Preview labels are intentionally not dead interactive controls.
+- All project/order/article content is an illustrative local fixture—not a backend, live account, real checkout or tested production application. Every visible action is implemented locally: no pretend network success, payment, persistence or account creation. Local state lasts until navigation/reload. Product artwork is decorative CSS geometry, not raster generation or fetched product imagery.
 - The naive comparison is an SVG image sample with a measured accessible description and equivalent ratio readout, not an accessible UI recommendation. Its colors can deliberately fail. It uses fixed text `#FFFFFF`, muted `#A1A1AA`, and series A `#18B7A6`; it is not an earlier engine output.
+- Ordinary controls use the measured base/text pair (category selection inverts that exact pair); primary-color borders, labels/check/underline and an isolated black/white keyboard-focus ring avoid reliance on decorative borders or chart accents. Series colors are never used for normal body text or white-on-accent CTA text. Low-target experiments may deliberately reduce preview/control contrast; a readable shell warning and Reset palette remain available.
 - Ratios shown to two decimals are display-only; pass/fail uses the unrounded values returned by the engine. Targets below WCAG text requirements are allowed for experimentation and can produce intentionally low-contrast previews.
 - `usable` excludes color-only series separation. RGB 32 / OKLab 0.075 are selection heuristics, not color-vision-deficiency simulations or certification. Patterns/markers supplement color, not guarantee complete chart accessibility.
 - Transparent surfaces are each applied once over the resolved background, never nested over another translucent panel. Effective colors are quantized composites; arbitrary integration layering must be remeasured.
