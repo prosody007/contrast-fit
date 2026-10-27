@@ -1,4 +1,4 @@
-// All-visible, independently themed product-gallery acceptance. No scenario selector.
+// All-visible, color-first fixture acceptance. No scenario or business controls.
 import assert from "node:assert/strict";
 import { resolve } from "node:path";
 import { writeFile } from "node:fs/promises";
@@ -9,7 +9,7 @@ export async function verifyScenarios({ page, base, screenshotDir, axeCheck, ren
   const previews = { interface: "#live-preview", commerce: "#commerce-preview", reading: "#reading-preview", analytics: "#analytics-preview" };
   const proof = { layouts: [], isolation: [], interactions: [], colors: [] };
   const apply = async (key, color) => page.locator(`#${key}-picker`).evaluate((element, value) => { element.value = value; element.dispatchEvent(new Event("input", { bubbles: true })); }, color);
-  async function capture(name, fullPage = false) { if (screenshotDir) await page.screenshot({ path: resolve(screenshotDir, `iteration3-${name}.png`), fullPage }); }
+  async function capture(name, fullPage = false) { if (screenshotDir) await page.screenshot({ path: resolve(screenshotDir, `iteration4-${name}.png`), fullPage }); }
   async function inspect(key) { await page.locator("#palette-lab").evaluate(e => { e.open = true; }); await page.locator("#inspect-example").selectOption(key); }
   async function output(key) { await inspect(key); await page.locator("[data-panel=export]").click(); await page.locator("[data-format=json]").click(); return JSON.parse(await page.locator("#export-output").textContent()); }
   async function allVisible() {
@@ -19,21 +19,37 @@ export async function verifyScenarios({ page, base, screenshotDir, axeCheck, ren
     }
     assert.equal(await page.locator("[data-scene]").count(), 0, "no old scene selector/hiding control remains");
   }
+  async function noBusinessControls() {
+    assert.equal(await page.locator(".live-preview button,.live-preview select,.live-preview a,.live-preview input,.live-preview [role=button],.live-preview [role=link],.live-preview [aria-pressed],.live-preview [onclick]").count(), 0, "previews contain no real or impersonated business controls");
+    assert.equal(await page.locator(".live-preview [data-category],.live-preview [data-add],.live-preview [data-quantity],#workspace-filter,.workbench-detail,#reading-list,#reading-toc,#order-lines,#checkout-demo").count(), 0, "removed workflows are absent, not disabled or hidden");
+    assert.equal(await page.locator("[data-project]").count(), 3);
+    assert.equal(await page.locator("[data-product]").count(), 3);
+    assert.equal(await page.locator(".reading-article>p").count(), 2, "reading fixture stays short");
+    assert.equal(await page.locator(".live-preview details").count(), 1, "only equivalent chart-data disclosure remains");
+  }
+  async function fixtureContent() {
+    return page.locator(".live-preview").evaluateAll(es => es.map(e => ({
+      id: e.id, content: e.textContent.replace(/\s+/g, " ").trim().replace(/Color separation heuristic passes\..*|Color-only separation fails\..*/, ""),
+      objects: [...e.querySelectorAll(".product-art svg")].map(svg => svg.innerHTML),
+      geometry: [...e.querySelectorAll("#chart .series-path")].map(path => path.getAttribute("d")),
+      values: [...e.querySelectorAll("#fixture-data tr")].map(row => row.textContent),
+    })));
+  }
   // Fresh loads: pleasant independent defaults, all examples in natural flow, no
   // prior scrolling/tab/inspector action needed to create or reveal their content.
   for (const [width, height] of [[1440, 900], [1280, 900], [768, 1024], [375, 812], [320, 740]]) {
     await page.setViewportSize({ width, height }); await page.goto(base, { waitUntil: "networkidle" });
-    await page.waitForURL(`${base}examples/studio/`); await page.locator("[data-issue]").first().waitFor();
-    await allVisible();
+    await page.waitForURL(`${base}examples/studio/`); await page.locator("[data-product]").first().waitFor();
+    await allVisible(); await noBusinessControls();
     assert.equal(await page.locator("#palette-lab").getAttribute("open"), null, "large inspector is secondary by default");
     const layout = await page.evaluate(() => {
       const box = selector => { const b = document.querySelector(selector).getBoundingClientRect(); return { top: b.top, bottom: b.bottom, width: b.width, height: b.height }; };
       return { width: innerWidth, height: innerHeight, scroll: scrollY, overflow: document.documentElement.scrollWidth > innerWidth + 1,
-        title: box("#scene-interface h3"), action: box("#workspace-filter"), task: box("[data-issue]"), examples: [...document.querySelectorAll(".example")].map(e => ({ id: e.id, top: e.offsetTop, bottom: e.offsetTop + e.offsetHeight, position: getComputedStyle(e).position })) };
+        title: box("#scene-interface h3"), palette: box("#interface-background"), content: box("[data-project]"), examples: [...document.querySelectorAll(".example")].map(e => ({ id: e.id, top: e.offsetTop, bottom: e.offsetTop + e.offsetHeight, position: getComputedStyle(e).position })) };
     });
     assert.equal(layout.scroll, 0); assert.equal(layout.overflow, false);
-    for (const key of ["title", "action"]) assert.ok(layout[key].top >= 0 && layout[key].bottom <= height, `${width}: real first application/action in the initial fold`);
-    assert.ok(layout.task.top >= 0 && layout.task.bottom <= height, "a whole readable actionable task is in the first fold, not four miniature samples");
+    for (const key of ["title", "palette"]) assert.ok(layout[key].top >= 0 && layout[key].bottom <= height, `${width}: color preview and palette control in the initial fold`);
+    assert.ok(layout.content.top >= 0 && layout.content.bottom <= height, "a whole readable colored status row is in the first fold");
     assert.ok(layout.examples.every(e => !["absolute", "fixed"].includes(e.position)), "normal document flow, not overlay screens");
     if (width <= 768) for (let i = 1; i < 4; i++) assert.ok(layout.examples[i].top >= layout.examples[i - 1].bottom, "mobile/tablet natural stack");
     else for (let i = 1; i < 4; i++) assert.ok(layout.examples[i].top >= layout.examples[i - 1].bottom, "generous full-width editorial stack on desktop");
@@ -43,7 +59,7 @@ export async function verifyScenarios({ page, base, screenshotDir, axeCheck, ren
     for (const key of ["commerce", "reading", "analytics"]) { await page.locator(`#example-${key}`).scrollIntoViewIfNeeded(); await capture(`${key}-${width}`); }
     if (width === 320 || width === 1440) await axeCheck(`${width}px all-visible curated defaults`);
   }
-  await page.setViewportSize({ width: 1440, height: 900 }); await page.goto(base, { waitUntil: "networkidle" }); await page.locator("[data-issue]").first().waitFor();
+  await page.setViewportSize({ width: 1440, height: 900 }); await page.goto(base, { waitUntil: "networkidle" }); await page.locator("[data-product]").first().waitFor();
   const defaults = {};
   for (const key of names) defaults[key] = await output(key);
   for (const key of names) {
@@ -80,53 +96,63 @@ export async function verifyScenarios({ page, base, screenshotDir, axeCheck, ren
   await page.locator("#reset").click(); assert.deepEqual(await output("commerce"), defaults.commerce); await allVisible();
   proof.isolation.push("Inspector target changes only inspected record; advanced targets/prefix/errors/drafts retained independently; reset affects one palette only");
 
-  await page.locator("#workspace-filter").selectOption("review"); assert.equal(await page.locator("[data-issue]:visible").count(), 1); assert.equal(await page.locator("#issue-count").textContent(), "1 issue shown");
-  const task = page.locator('[data-issue="NS-124"]'); await task.focus(); await page.keyboard.press("Enter"); assert.equal(await page.locator("#workspace-detail-title").textContent(), "Bring search into the workspace");
-  await task.evaluate(e => { window.fixtureNode = e; }); await apply("interface", "#273E4D"); await apply("reading", "#EEE5D5");
-  assert.equal(await task.evaluate(e => e === window.fixtureNode && e === document.activeElement), true); assert.equal(await page.locator("#workspace-filter").inputValue(), "review");
-  await page.locator("#workspace-detail-action").focus(); await page.keyboard.press("Enter"); assert.equal(await task.evaluate(e => e === document.activeElement), true); assert.equal(await page.locator(".workbench-detail").isVisible(), false);
-  await page.keyboard.press("Enter"); await page.keyboard.press("Escape"); assert.equal(await task.evaluate(e => e === document.activeElement), true);
-  await page.locator("#workspace-filter").selectOption("done"); assert.equal(await page.locator("[data-issue]:visible").count(), 0); assert.equal(await page.locator(".empty-issues").isVisible(), true);
-  await page.locator("#workspace-filter").selectOption("all"); await page.locator('[data-issue="NS-119"]').click();
-  proof.interactions.push("Project: filter/count, selected details, empty state, own/other palette node+focus identity, Enter/close/Escape focus return");
-
-  await page.locator("#checkout-demo").click(); assert.match(await page.locator("#order-review-status").textContent(), /empty/);
-  await page.locator("[data-category=home]").click(); assert.equal(await page.locator("[data-product]:visible").count(), 2);
-  await page.locator("[data-add=vase]").click(); await page.locator("[data-add=vase]").click(); await page.locator("[data-add=cup]").click();
-  assert.equal(await page.locator("#order-count").textContent(), "3 items"); assert.equal(await page.locator("#order-total").textContent(), "$120.00");
-  await page.locator('[data-quantity=vase][data-delta="-1"]').click(); assert.equal(await page.locator("#order-total").textContent(), "$72.00");
-  const plus = page.locator('[data-quantity=cup][data-delta="1"]'); await plus.focus(); await page.keyboard.press("Enter"); assert.equal(await page.locator("#order-total").textContent(), "$96.00");
-  await plus.evaluate(e => { window.fixtureNode = e; }); await apply("commerce", "#EDE0CC"); await apply("analytics", "#1A2733"); assert.equal(await plus.evaluate(e => e === window.fixtureNode && e === document.activeElement), true);
-  await page.locator("[data-example-reset=commerce]").click(); assert.equal(await page.locator("#order-total").textContent(), "$96.00", "example reset retains the order");
-  await page.locator("[data-category=desk]").click(); assert.equal(await page.locator("[data-product]:visible").count(), 2);
-  await page.locator("[data-add=notebook]").click(); assert.equal(await page.locator("#order-total").textContent(), "$114.00");
-  await page.locator('[data-quantity=notebook][data-delta="-1"]').click(); assert.equal(await page.locator("[data-add=notebook]").evaluate(e => e === document.activeElement), true); assert.equal(await page.locator("#order-total").textContent(), "$96.00");
-  await page.locator('[data-quantity=cup][data-delta="-1"]').click(); await page.locator('[data-quantity=cup][data-delta="-1"]').click();
-  assert.equal(await page.locator("[data-category=desk]").evaluate(e => e === document.activeElement), true, "final removal of filtered product returns focus to selected category");
-  assert.equal(await page.locator("#order-total").textContent(), "$48.00");
-  await page.locator("[data-category=home]").click(); await page.locator("[data-add=cup]").click(); await page.locator("[data-add=cup]").click();
-  await page.locator("#checkout-demo").click(); assert.match(await page.locator("#order-review-status").textContent(), /no order was placed and no payment/); await page.locator("[data-category=all]").click();
-  proof.interactions.push("Commerce: category, empty review, Add×2, quantity arithmetic/removal, exact total, final-removal focus, own/other palette/reset state retention, truthful review");
-
-  const toc = page.locator('#reading-toc [data-reading-target="reading-signal"]'); await toc.focus(); await page.keyboard.press("Enter"); assert.equal(new URL(page.url()).hash, "#reading-signal"); assert.equal(await page.locator("#reading-signal").evaluate(e => e === document.activeElement), true); assert.equal(await toc.getAttribute("aria-current"), "true");
-  await page.locator("#reading-list").click(); assert.equal(await page.locator("#reading-list").getAttribute("aria-pressed"), "true");
-  await page.locator("#reading-list").focus(); await apply("reading", "#F4EBDD"); await apply("interface", "#243044"); assert.equal(await page.locator("#reading-list").evaluate(e => e === document.activeElement), true);
-  await page.locator("[data-example-reset=reading]").click(); assert.equal(await page.locator("#reading-list").getAttribute("aria-pressed"), "true"); assert.equal(await toc.getAttribute("aria-current"), "true"); assert.equal(await page.locator("#order-total").textContent(), "$96.00");
-  await page.locator(".article-callout a").focus(); await page.keyboard.press("Enter"); assert.equal(new URL(page.url()).hash, "#reading-practice"); assert.equal(await page.locator("#reading-practice").evaluate(e => e === document.activeElement), true);
-  proof.interactions.push("Reading: keyboard TOC/inline link hash + heading focus, semantic saved state, own/other palette and reset retention, no scene switching");
-  await page.locator('[data-quantity=vase][data-delta="-1"]').click();
-  await page.locator('[data-quantity=cup][data-delta="-1"]').click(); await page.locator('[data-quantity=cup][data-delta="-1"]').click();
-  assert.equal(await page.locator("#order-count").textContent(), "0 items"); assert.equal(await page.locator("#order-total").textContent(), "$0.00"); assert.equal(await page.locator(".order-empty").isVisible(), true);
-  await page.locator("#checkout-demo").click(); assert.match(await page.locator("#order-review-status").textContent(), /empty/);
-  await page.locator("[data-add=vase]").click(); await page.locator("[data-add=cup]").click(); await page.locator("[data-add=cup]").click(); assert.equal(await page.locator("#order-total").textContent(), "$96.00");
-  proof.interactions.push("Commerce remove-to-empty and recover; filtered-product final-removal focus fallback");
-  await axeCheck("all four live application interaction states"); await capture("interactions", true);
+  // Palette controls are the complete interaction model. Content, artwork and
+  // data stay identical; computed content colors must change through the engine.
+  const stableContent = await fixtureContent();
+  await page.locator(".project-list").evaluate(e => { window.fixtureNodes = [...document.querySelectorAll("[data-project],[data-product],.reading-article")]; });
+  const changedColors = [];
+  for (const key of names) {
+    await noBusinessControls();
+    const before = await output(key);
+    const element = page.locator(previews[key]);
+    const colors = () => element.evaluate(e => ({ background: getComputedStyle(e).backgroundColor, text: getComputedStyle(e).color,
+      muted: getComputedStyle(e.querySelector(".sample-muted")).color,
+      surface: getComputedStyle(e.querySelector(".sample-metric,.sample-panel,.product-art,.article-callout")).backgroundColor,
+      status: e.querySelector(".sample-status") ? getComputedStyle(e.querySelector(".sample-status")).backgroundColor : null,
+      statusText: e.querySelector(".sample-status") ? getComputedStyle(e.querySelector(".sample-status")).color : null,
+      series: [...e.querySelectorAll("#chart .series-path")].map(p => getComputedStyle(p).stroke) }));
+    const oldColors = await colors();
+    const input = page.locator(`#${key}-background`); await input.focus();
+    await input.fill("#B7C9D6");
+    assert.equal(await input.evaluate(e => e === document.activeElement), true, "typing preserves palette focus");
+    await input.evaluate(e => { window.paletteSelection = [e.selectionStart,e.selectionEnd]; });
+    await apply(names.find(n => n !== key), "#313B49");
+    assert.equal(await input.evaluate(e => e === document.activeElement && e.selectionStart === window.paletteSelection[0] && e.selectionEnd === window.paletteSelection[1]), true, "unrelated palette picker preserves focus/caret");
+    await input.press("Tab");
+    assert.equal(await page.locator(`[data-example-preset=${key}]`).first().evaluate(e => e === document.activeElement && e.matches(":focus-visible") && parseFloat(getComputedStyle(e).outlineWidth)>=2), true, "presets are keyboard reachable after hex");
+    await page.keyboard.press("Enter");
+    await input.fill("#12XZ"); assert.equal(await input.evaluate(e => e === document.activeElement), true);
+    const valid = await colors(); await input.press("Tab"); assert.equal(await input.getAttribute("aria-invalid"), "true"); assert.deepEqual(await colors(), valid, "invalid/blur cannot partially recolor actual content");
+    await input.press("Escape");
+    await apply(key, "#B7C9D6");
+    const newColors = await colors();
+    for (const role of ["background","text","muted","surface"]) assert.notEqual(newColors[role], oldColors[role], `${key}: real ${role} color visibly changes`);
+    if (key === "analytics") assert.notDeepEqual(newColors.series, oldColors.series, "chart actually recolors returned series");
+    const accepted = await output(key);
+    const exact = await page.evaluate(async ({base,state}) => (await import(`${base}src/contrast-fit.js`)).createContrastFit(state.inputBackground,state.options), {base,state:accepted});
+    assert.deepEqual(accepted.palette, exact);
+    const rgb = hex => `rgb(${[1,3,5].map(i => parseInt(hex.slice(i,i+2),16)).join(", ")})`;
+    for (const role of ["background","text","muted"]) assert.equal(newColors[role], rgb(role === "background" ? exact.background : exact.colors[role]), `${key}: computed ${role} is the exact real-engine output`);
+    assert.equal(newColors.surface, exact.colors[key === "reading" ? "panel" : "metric"], `${key}: actual surface uses the exact returned alpha CSS`);
+    if (newColors.status) { assert.equal(newColors.status,rgb(exact.colors.goodBg)); assert.equal(newColors.statusText,rgb(exact.colors.goodText)); }
+    if (key === "analytics") assert.deepEqual(newColors.series,["seriesA","seriesB","seriesC"].map(role => rgb(exact.colors[role])));
+    assert.deepEqual(await fixtureContent(), stableContent, "color changes preserve text, artwork geometry and fixture data");
+    assert.equal(await page.evaluate(() => window.fixtureNodes.every(e => e.isConnected && !e.hasAttribute("tabindex"))), true, "static fixture identities remain stable, not fake clickable rows");
+    await page.locator(`[data-example-reset=${key}]`).focus(); await page.keyboard.press("Enter");
+    assert.equal(await page.locator(`[data-example-reset=${key}]`).evaluate(e => e === document.activeElement), true, "keyboard reset retains focus");
+    assert.deepEqual(await output(key), before, "reset restores exact palette/options/export");
+    changedColors.push({key,before:oldColors,after:newColors});
+    for (const other of names.filter(n => n !== key)) { await page.locator(`[data-example-reset=${other}]`).click(); }
+    proof.interactions.push(`${key}: color-only controls, stable content/objects/data/node identity, input/caret/preset/reset focus, computed background/text/muted/surface updates, exact real engine`);
+  }
+  proof.computedUpdates = changedColors;
+  await noBusinessControls(); await axeCheck("all four simple color-only fixtures"); await capture("color-only", true);
 
   const samples = {
-    interface: [["[data-issue] strong", "text"], ["[data-issue] .issue-meta", "muted"], ["#workspace-filter", "text"], [".workspace-summary strong", "metricText"], [".workspace-summary .sample-muted", "metricMuted"], ["#workspace-detail-title", "panelText"], ["#workspace-detail-copy", "panelMuted"], ["[data-issue] .good", "goodText"], ["[data-issue] .warn", "warnText"]],
-    commerce: [[".product-title h5", "text"], [".product-mark", "metricMuted"], [".product-add", "text"], ["[data-category][aria-pressed=true]", "text"], ["#order-title", "panelText"], ["#order-total", "panelText"], [".commerce-disclaimer", "panelMuted"], [".quantity-control button", "text"]],
-    reading: [[".reading-article>p", "text"], [".article-meta", "muted"], [".article-callout p", "panelText"], [".article-callout a", "panelText"], ["#reading-list", "text"], ["#reading-toc a", "text"]],
-    analytics: [[".analytics-heading h3", "text"], [".analytics-heading .sample-muted", "muted"], [".analytics-metrics strong", "metricText"], [".analytics-metrics .sample-muted", "metricMuted"]],
+    interface: [["[data-project] strong", "text"], ["[data-project] .sample-muted", "muted"], [".workspace-overview .sample-metric strong", "metricText"], [".workspace-overview .sample-metric .sample-muted", "metricMuted"], [".workspace-overview .sample-panel h4", "panelText"], [".workspace-overview .sample-panel p", "panelMuted"], ["[data-project] .good", "goodText"], ["[data-project] .warn", "warnText"]],
+    commerce: [[".product-title h4", "text"], [".product-title strong", "text"], [".product-card>p", "muted"], [".product-mark", "metricMuted"], [".collection-note>strong", "panelText"], [".collection-note>p", "panelMuted"], [".scene-commerce .good", "goodText"], [".collection-note .warn", "warnText"]],
+    reading: [[".reading-article>p", "text"], [".reading-article h4", "text"], [".reading-top .sample-muted", "muted"], [".article-callout p", "panelText"], [".article-callout .sample-muted", "panelMuted"]],
+    analytics: [[".analytics-heading h3", "text"], ["#chart-legend>span", "text"], [".analytics-heading .sample-muted", "muted"], [".analytics-metrics strong", "metricText"], [".analytics-metrics .sample-muted", "metricMuted"], [".analytics-heading .good", "goodText"]],
   };
   for (const test of [
     { label: "curated-defaults", bg: null, strategy: "auto", targets: [8, 4.7, 3.3, 4.5] },
@@ -156,7 +182,7 @@ export async function verifyScenarios({ page, base, screenshotDir, axeCheck, ren
       if (test.label==="preserve-unresolved") { assert.equal(data.palette.usable,false); assert.match(await page.locator(`#${key}-feedback`).textContent(),/Targets unresolved/); }
       stateProof.examples.push({key,background:data.palette.background,usable:data.palette.usable,samples:actual});
     }
-    await allVisible();
+    await allVisible(); await noBusinessControls();
     if(test.label!=="surface12-others1") await axeCheck(`${test.label} all four independent examples`);
     else {
       const unexpected=await page.evaluate(async()=> (await window.axe.run(document)).violations.filter(v=>["serious","critical"].includes(v.impact)).flatMap(v=>v.nodes.filter(n=>v.id!=="color-contrast"||!n.target.every(s=>document.querySelector(s)?.closest(".live-preview"))).map(n=>({id:v.id,target:n.target}))));
@@ -166,6 +192,6 @@ export async function verifyScenarios({ page, base, screenshotDir, axeCheck, ren
   }
   for(const key of names){await inspect(key);await page.locator("#reset").click();}
   await page.locator("#palette-lab").evaluate(e=>{e.open=false;}); await allVisible();
-  if(screenshotDir) await writeFile(resolve(screenshotDir,"iteration3-scenarios-proof.json"),JSON.stringify(proof,null,2)+"\n");
-  console.log("PASS Studio gallery: four permanent normal-flow examples; 5 responsive widths; independent palettes/options/drafts/exports; 3 application loops; 27 actual foreground/backdrop roles × 6 states (including curated defaults)");
+  if(screenshotDir) await writeFile(resolve(screenshotDir,"iteration4-scenarios-proof.json"),JSON.stringify(proof,null,2)+"\n");
+  console.log("PASS Studio gallery: four permanent normal-flow examples; 5 responsive widths; independent palettes/options/drafts/exports; no business controls; stable fixtures + computed color updates; 27 actual foreground/backdrop roles × 6 states (including curated defaults)");
 }

@@ -166,7 +166,7 @@ function resetPalette(key) {
   model.drafts = {}; model.errors.clear();
   if (key === active) {
     state = model.state; palette = model.palette; selectedToken = 1;
-    syncTools(); renderTools(); text("input-status", `${examples[key].name} default palette restored. Application state retained.`);
+    syncTools(); renderTools(); text("input-status", `${examples[key].name} default palette restored. Preview content unchanged.`);
   }
   renderExample(key);
 }
@@ -405,8 +405,8 @@ $("#download").addEventListener("click", () => {
   } catch { text("export-status", "Download unavailable in this browser. Use Copy code or select the code manually."); }
 });
 
-// Each palette owns only its example. Existing issue/order/reading nodes are never
-// replaced by palette rendering. The single inspector reads a selected record.
+// Each palette owns only its example. Static fixture nodes are never replaced by
+// palette rendering. The single inspector reads a selected record.
 function renderExample(key) {
   const model = models[key], value = model.palette, example = examples[key];
   const preview = $(example.preview); applyPaletteToElement(preview, value);
