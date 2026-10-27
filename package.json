@@ -1,23 +1,58 @@
 {
-  "name": "adaptive-palette",
+  "name": "contrast-fit",
   "version": "0.1.0",
-  "description": "Generate readable semantic UI color tokens from any background color.",
+  "description": "Generate deterministic, contrast-fitted UI color tokens from a background color.",
   "type": "module",
-  "main": "./src/adaptive-palette.js",
+  "sideEffects": [
+    "./dist/contrast-fit.global.js"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "./dist/contrast-fit.cjs",
+  "types": "./dist/contrast-fit.d.ts",
   "exports": {
-    ".": "./src/adaptive-palette.js"
+    ".": {
+      "import": {
+        "types": "./dist/contrast-fit.d.ts",
+        "default": "./dist/contrast-fit.js"
+      },
+      "require": {
+        "types": "./dist/contrast-fit.d.cts",
+        "default": "./dist/contrast-fit.cjs"
+      },
+      "default": "./dist/contrast-fit.js"
+    },
+    "./browser": "./dist/contrast-fit.global.js",
+    "./package.json": "./package.json"
   },
   "files": [
+    "dist",
     "src",
-    "examples",
+    "docs/api.md",
+    "docs/architecture.md",
     "README.md",
-    "LICENSE"
+    "MIGRATING.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "RELEASING.md",
+    "LICENSE",
+    "SECURITY.md"
   ],
   "scripts": {
-    "build": "npm run check && node scripts/build-static.mjs",
-    "dev": "python3 -m http.server 4173 --bind 127.0.0.1",
-    "test": "node --test",
-    "check": "node --check src/adaptive-palette.js && node --check examples/dashboard/app.js"
+    "dev": "node scripts/dev-server.mjs",
+    "build": "npm run check && npm run build:lib && node scripts/build-static.mjs && node scripts/check-static.mjs",
+    "test": "node --test test/*.test.js",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/** --test-coverage-lines=95 --test-coverage-branches=85 --test-coverage-functions=95 test/*.test.js",
+    "check": "node scripts/check-syntax.mjs",
+    "typecheck": "npm run build:lib && tsc -p tsconfig.json",
+    "package:check": "npm pack --dry-run",
+    "package:smoke": "node scripts/package-smoke.mjs",
+    "test:browser": "node test/browser/dashboard-smoke.mjs",
+    "verify": "npm run check && npm run typecheck && npm run test:coverage && npm run build && npm run check:naming && npm run package:smoke",
+    "prepack": "npm run build:lib && npm run check:naming",
+    "build:lib": "node scripts/build-library.mjs",
+    "check:naming": "node scripts/check-naming.mjs"
   },
   "keywords": [
     "color",
@@ -29,11 +64,20 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/prosody007/adaptive-palette.git"
+    "url": "git+https://github.com/prosody007/contrast-fit.git"
   },
   "bugs": {
-    "url": "https://github.com/prosody007/adaptive-palette/issues"
+    "url": "https://github.com/prosody007/contrast-fit/issues"
   },
-  "homepage": "https://github.com/prosody007/adaptive-palette#readme",
-  "license": "MIT"
+  "homepage": "https://github.com/prosody007/contrast-fit#readme",
+  "license": "MIT",
+  "devDependencies": {
+    "axe-core": "4.14.0",
+    "playwright": "1.64.1",
+    "typescript": "7.0.2"
+  },
+  "module": "./dist/contrast-fit.js",
+  "browser": "./dist/contrast-fit.js",
+  "unpkg": "./dist/contrast-fit.global.js",
+  "jsdelivr": "./dist/contrast-fit.global.js"
 }

@@ -1,92 +1,224 @@
-# Adaptive Palette
+# ContrastFit
 
-Generate accessible, theme-aware UI color tokens from a single background color.
+**UI color tokens with automatic contrast repair.**
 
-Adaptive Palette is a small framework-agnostic color engine for AI-generated dashboards, charts, cards, and dynamic UI surfaces. It helps generated interfaces stay readable on both dark and light backgrounds without manually maintaining separate theme palettes.
+Turn one background color into a coordinated set of interface and chart colors—then use the result, rather than manually repairing a list of contrast warnings.
 
-## Highlights
+ContrastFit is a deterministic, framework-independent JavaScript color engine for dashboards, embedded widgets, cards, and user-customizable interfaces. It fits text, surfaces, status pairs, and three chart series to your requested contrast targets. If the original background cannot support those targets, the default strategy adjusts the content background and preserves the original input separately. **It does not silently lower your targets.**
 
-- Generates semantic UI tokens from one background color
-- Uses WCAG relative luminance and contrast ratio calculations
-- Produces text, muted text, borders, panels, chart grid, axes, series colors, and status colors
-- Exports CSS custom properties for easy integration
-- Works without dependencies, build tools, or a runtime framework
-- Includes a static dashboard demo ready for Vercel
+- **17 semantic color tokens**, including text, surfaces, chart colors, and status pairs.
+- **Automatic repair**, with original input, applied background, measured results, and adjustment records.
+- **Redundant chart identity** through distinct line patterns and circle/square/diamond markers.
+- **ES modules, CommonJS, and a standalone browser script**, with TypeScript declarations.
+- **SSR-safe CSS serialization**, optional DOM application, and **zero runtime dependencies**.
 
-## Demo
+> **Release status:** pre-release, developed and verified locally. This repository does not yet document a public npm release. Use a local build or tarball; a matching registry name is not proof that a package is this project. Local checks, configured CI, a deployed demo, and an actual published release are separate milestones.
 
-Run locally:
+[Quick start](#quick-start) · [What it solves](#what-it-solves) · [Integration](#integration) · [API](#api-overview) · [Accessibility boundaries](#accessibility-boundaries) · [Development](#development-and-verification) · [Migration](./MIGRATING.md)
+
+## What it solves
+
+A fixed light/dark theme is often insufficient when users choose arbitrary background colors, a widget inherits its host's appearance, or generated dashboards need readable text and charts without maintaining a palette for every possible background.
+
+ContrastFit turns that problem into a reproducible rendering plan:
+
+1. **Provide an opaque background color** and, optionally, contrast targets and preferred chart accents.
+2. **Fit the colors automatically.** Foregrounds and surfaces are adapted first; the content background changes only when the requested targets require it.
+3. **Apply the returned background, colors, and chart styles.** Inspect metrics and adjustments when you need an audit trail.
+
+### A concrete repair—not just a warning
+
+With the default primary-text target of **8:1**, `#777777` cannot provide sufficient contrast against either black or white text. Keeping that exact background and merely emitting a warning would leave the integration unfinished.
+
+```js
+const palette = createContrastFit("#777777");
+
+palette.inputBackground;                 // "#777777" — the user's original choice
+palette.background;                      // "#A0A0A0" — resolved content background
+palette.colors.text;                     // "#000000"
+palette.metrics.textContrast.toFixed(2);  // "8.03"
+palette.targets.textContrast;             // 8 — unchanged
+palette.usable;                           // true
+palette.warnings;                         // []
+```
+
+The original color remains available for a surrounding frame or host. The resolved color is used consistently by CSS variables, contrast measurements, alpha composites, and tokens.
+
+Examples under the default options:
+
+| Input background | Applied content background | Primary text | Primary-text contrast |
+| --- | --- | --- | --- |
+| `#777777` | `#A0A0A0` | `#000000` | `8.03:1` |
+| `#2B3548` | `#2B3548` | `#CED1D5` | `8.04:1` |
+| `#F5F7F9` | `#F5F7F9` | `#4A4A4B` | `8.24:1` |
+
+These are reproducible examples, not a promise to preserve every requested background. Already-suitable backgrounds stay unchanged. Strict targets can require a substantial adjustment.
+
+### Where it fits
+
+| Use case | What ContrastFit provides |
+| --- | --- |
+| User-selected card or widget backgrounds | Automatic text and content-background fitting, with the original input preserved |
+| Data-heavy dashboards | Coordinated text, panels, metrics, status pairs, and chart colors |
+| Charts on changing backgrounds | Contrast-fitted series colors plus line/marker instructions |
+| Server-rendered reports and applications | A pure color engine and DOM-free CSS-property map |
+| Framework integrations | Plain objects and CSS variables, without a required React/Vue/Svelte runtime |
+| Repeatable generated interfaces | Deterministic output for the same input and options, with inspectable measurements |
+
+This is **not** a palette-inspiration generator, an image color extractor, a full design system, a page-wide accessibility scanner, or a WCAG certification service. It does not use AI or make network requests.
+
+## Quick start
+
+### Run the interactive demo
+
+Use **Node.js 22+** and npm:
 
 ```bash
+git clone https://github.com/prosody007/contrast-fit.git
+cd contrast-fit
+npm ci --ignore-scripts
 npm run dev
 ```
 
-Open:
+Open <http://127.0.0.1:4173/>. The development server binds to loopback only.
 
-```text
-http://127.0.0.1:4173/
+The demo includes two independently controlled dashboard cards, a one-click mid-gray repair example, applied-background and contrast readouts, distinct chart line/marker encodings, accessible data tables, and a live inspector for the first card's tokens, adjustments, CSS, and JSON output. The [product guide](./docs/index.html) explains the engine separately from the dashboard example.
+
+### Build a local package
+
+```bash
+# In this repository, after npm ci --ignore-scripts:
+npm pack
+
+# In your application, install the tarball produced above:
+npm install /absolute/path/to/contrast-fit-0.1.0.tgz
 ```
 
-The demo contains dense chart cards with background color controls. Change a background color and the text, borders, chart lines, grid, and status colors update together.
+`npm pack` runs the package's validation/build lifecycle. For an intentionally script-disabled pack, run `npm run build:lib` and `npm run check:naming` first; do not pack stale or absent build artifacts.
 
-## Installation
+Then import the installed package:
 
-This repository currently ships as source-first JavaScript. You can import the module directly from `src/adaptive-palette.js` or copy the file into your own project.
+```js
+import { createContrastFit, paletteToCssVariables } from "contrast-fit";
+
+const palette = createContrastFit("#2B3548");
+const variables = paletteToCssVariables(palette);
+
+console.log(variables["--contrast-fit-bg"]);   // "#2B3548"
+console.log(variables["--contrast-fit-text"]); // "#CED1D5"
+```
+
+## Integration
+
+### Browser modules and DOM application
+
+When serving a checkout directly, use its source module. In an application with a package resolver, import the same functions from `"contrast-fit"` instead.
 
 ```js
 import {
+  createContrastFit,
   applyPaletteToElement,
-  createAdaptivePalette,
-} from "./src/adaptive-palette.js";
-```
-
-## Quick Start
-
-```html
-<article class="card" data-bg="#2B3548">
-  <h2>North America expansion</h2>
-  <svg class="chart"></svg>
-</article>
-```
-
-```js
-import {
-  applyPaletteToElement,
-  createAdaptivePalette,
-} from "./src/adaptive-palette.js";
+} from "./src/contrast-fit.js";
 
 const card = document.querySelector(".card");
-const palette = createAdaptivePalette(card.dataset.bg);
-
+const palette = createContrastFit("#777777");
 applyPaletteToElement(card, palette);
+
+// Optional: preserve the user's chosen color outside the repaired content.
+card.parentElement.style.backgroundColor = palette.inputBackground;
 ```
 
 ```css
 .card {
-  background: var(--adaptive-bg);
-  color: var(--adaptive-text);
-  border: 1px solid var(--adaptive-border);
+  background: var(--contrast-fit-bg);
+  color: var(--contrast-fit-text);
+  border: 1px solid var(--contrast-fit-border);
 }
+.card__secondary { color: var(--contrast-fit-muted); }
+.card__metric { background: var(--contrast-fit-metric); }
+```
 
-.chart-grid {
-  stroke: var(--adaptive-grid);
-}
+**Apply the resolved background as well as the foregrounds.** Applying the returned text over the original input instead of `palette.background` discards the automatic repair.
 
-.chart-line {
-  stroke: var(--adaptive-series-a);
+### CommonJS
+
+```js
+const { createContrastFit, paletteToCssVariables } = require("contrast-fit");
+
+const palette = createContrastFit("#F5F7F9");
+const variables = paletteToCssVariables(palette, "report");
+```
+
+### Standalone browser script
+
+After `npm run build:lib`, serve the generated script alongside your application. The static site build also includes it under `dist/`.
+
+```html
+<script src="./dist/contrast-fit.global.js"></script>
+<script>
+  const palette = ContrastFit.createContrastFit("#777777");
+  ContrastFit.applyPaletteToElement(document.querySelector(".card"), palette);
+</script>
+```
+
+The global build exposes `globalThis.ContrastFit`. This is a local-file example, not a claim that a CDN release exists. Browser integration requires a modern browser with the JavaScript features used by the ES2022 build and CSS custom-property support; there is no legacy-browser/polyfill guarantee.
+
+### TypeScript, frameworks, and SSR
+
+```ts
+import {
+  createContrastFit,
+  paletteToCssVariables,
+  type ContrastFitPalette,
+  type PaletteOptions,
+} from "contrast-fit";
+
+const options: PaletteOptions = { textContrast: 8 };
+const palette: ContrastFitPalette = createContrastFit("#2B3548", options);
+const style = paletteToCssVariables(palette, "report");
+// Feed style into your framework's supported style API.
+// Its keys include --report-bg, --report-text, and all remaining tokens.
+```
+
+The core and `paletteToCssVariables` do not access the DOM, read ambient theme state, or mutate your input options. They can run during server rendering. `applyPaletteToElement` is the optional DOM-writing helper.
+
+Use your renderer's normal attribute escaping and style handling; do not concatenate untrusted values into HTML. Separate React/Vue/Svelte adapter packages are not provided or required. Node.js 22+ is the supported server/tooling baseline; other JavaScript runtimes are not yet part of the verified support matrix.
+
+### Chart identity is more than color
+
+ContrastFit returns three complementary encodings:
+
+| Series | `dashArray` | `marker` |
+| --- | --- | --- |
+| `seriesA` | `"none"` | `"circle"` |
+| `seriesB` | `"9 5"` | `"square"` |
+| `seriesC` | `"2 5"` | `"diamond"` |
+
+Apply them to both chart paths and matching legend keys:
+
+```js
+for (const [name, encoding] of Object.entries(palette.seriesStyles)) {
+  const path = chart.querySelector(`[data-series="${name}"]`);
+  path.style.strokeDasharray = encoding.dashArray;
+  // Your chart adapter must also render encoding.marker and a matching legend.
 }
 ```
 
-## API
+At extreme targets such as 21:1, several series may need the same endpoint color. `meetsTarget.seriesDistinct` remains `false` when color-only separation fails. A `series-encoding` adjustment explains the non-color remedy. **Do not drop the returned styles and claim the lines remain distinguishable.** Include labels and an equivalent data table where appropriate, as the bundled SVG demo does.
 
-### `createAdaptivePalette(backgroundHex, options?)`
+## API overview
 
-Creates an adaptive palette from a hex background color.
+### `createContrastFit(backgroundHex, options?)`
+
+Accepts an opaque three- or six-digit HEX string, with or without `#`; surrounding whitespace is allowed. It returns a fresh `ContrastFitPalette`.
 
 ```js
-const palette = createAdaptivePalette("#F5F7F9", {
+const palette = createContrastFit("#2B3548", {
+  backgroundStrategy: "auto",
   textContrast: 8,
   mutedContrast: 4.7,
+  accentContrast: 3.3,
+  surfaceTextContrast: 4.5,
   accents: {
     seriesA: "#18B7A6",
     seriesB: "#F06B8A",
@@ -95,129 +227,134 @@ const palette = createAdaptivePalette("#F5F7F9", {
 });
 ```
 
-Returns:
+| Option | Default | Constraint |
+| --- | --- | --- |
+| `backgroundStrategy` | `"auto"` | Fit content automatically, or use `"preserve"` to lock the original background |
+| `textContrast` | `8` | Primary text against the resolved content background |
+| `mutedContrast` | `4.7` | Secondary text against the resolved content background |
+| `accentContrast` | `3.3` | Each chart series against the resolved content background |
+| `surfaceTextContrast` | `4.5` | Primary/secondary text on panel and metric surfaces; status text on its own status background |
+| `accents.seriesA/B/C` | Built-in accents | Preferred colors, retained when contrast and series-distinctness constraints permit |
+
+Targets must be finite numbers in `[1, 21]`. Options and accents must be plain objects; unknown keys are rejected rather than silently ignored. Unsupported inputs throw. See the [API reference](./docs/api.md) for detailed signatures, utility functions, and error contracts.
+
+### Main return fields
+
+| Field | Meaning |
+| --- | --- |
+| `inputBackground` | Normalized original input, uppercase `#RRGGBB` |
+| `background`, `colors.background` | The actual resolved content background used for the output and measurements |
+| `usable` | All measured **numeric contrast targets** pass; not a whole-page or chart-accessibility certification |
+| `adjustments` | Applied background, status-pair, and non-color series-encoding remedies, with explanatory messages |
+| `colors` | 17 authored CSS colors, as opaque HEX or `rgba(...)` |
+| `effectiveColors` | Seven alpha-bearing tokens composited over the resolved background and quantized to opaque HEX |
+| `targets`, `metrics`, `meetsTarget` | Requested targets, computed measurements, and individual results, including honest color-only series distinctness |
+| `seriesStyles` | Per-series line pattern and marker instructions for your chart adapter |
+| `warnings` | Unresolved diagnostics, especially when explicit `preserve` constraints prevent automatic repair |
+| `alphas`, `tokens` | Applied transparency and 17 structured display/integration records |
+| `isDark` | Whether white offers stronger contrast than black on the resolved background; not a general perceptual theme classifier |
+
+Each token includes `name`, `css`, `color`, `alpha`, `effectiveColor`, and `contrast`, plus compatibility display fields `value` and `swatch`. Use `css` for CSS, not the display-only `value` string. Token names/order are not stable machine identifiers; prefer named fields and CSS variables.
+
+### Explicitly preserve a background
 
 ```js
-{
-  background: "#F5F7F9",
-  isDark: false,
-  colors: {
-    background: "#F5F7F9",
-    text: "#494A4B",
-    muted: "#6C6D6E",
-    border: "rgba(...)",
-    grid: "rgba(...)",
-    seriesA: "#139486"
-  },
-  metrics: {
-    textContrast: 8.25,
-    mutedContrast: 4.85,
-    seriesAContrast: 3.48
-  },
-  tokens: []
-}
+const locked = createContrastFit("#777777", {
+  backgroundStrategy: "preserve",
+  textContrast: 8,
+});
+
+locked.background; // "#777777"
+locked.usable;     // false — the locked background cannot support this target
+locked.warnings;   // unresolved diagnostics; the target has not been lowered
 ```
 
-### `applyPaletteToElement(element, palette, prefix?)`
+Use this expert mode only when preserving exact pixels is more important than automatic resolution. Your application must handle the unresolved constraint. The default `auto` strategy does not require a manual repair branch for this example.
 
-Writes generated colors to CSS custom properties. The default prefix is `adaptive`.
+### CSS helpers
 
-```js
-applyPaletteToElement(card, palette);
-```
+- **`paletteToCssVariables(palette, prefix = "contrast-fit")`** returns a new map containing all 17 CSS custom properties, without reading or writing the DOM.
+- **`applyPaletteToElement(element, palette, prefix = "contrast-fit")`** validates the map, calls `element.style.setProperty` for each entry, and returns the same map.
 
-Common variables:
+Prefixes must match `[A-Za-z_][A-Za-z0-9_-]*`, for example `contrast-fit`, `report`, or `theme-dark`. Palette/prefix validation happens before DOM writes; a caller-provided style adapter that itself throws is not transactional.
 
-```text
---adaptive-bg
---adaptive-text
---adaptive-muted
---adaptive-panel
---adaptive-metric
---adaptive-border
---adaptive-grid
---adaptive-axis
---adaptive-bars
---adaptive-series-a
---adaptive-series-b
---adaptive-series-c
---adaptive-good-bg
---adaptive-good-text
---adaptive-warn-bg
---adaptive-warn-text
-```
+### CSS token reference
 
-## How It Works
+| Role | Default variables |
+| --- | --- |
+| Background and text | `--contrast-fit-bg`, `--contrast-fit-text`, `--contrast-fit-muted` |
+| Surfaces | `--contrast-fit-panel`, `--contrast-fit-metric` |
+| Structure | `--contrast-fit-border`, `--contrast-fit-grid`, `--contrast-fit-axis` |
+| Chart decoration | `--contrast-fit-plot-fill`, `--contrast-fit-bars` |
+| Chart series | `--contrast-fit-series-a`, `--contrast-fit-series-b`, `--contrast-fit-series-c` |
+| Status pairs | `--contrast-fit-good-bg`, `--contrast-fit-good-text`, `--contrast-fit-warn-bg`, `--contrast-fit-warn-text` |
 
-Adaptive Palette uses deterministic color generation:
+**Layering is part of the contract.** Transparent tokens are measured as one layer over `palette.background`. Nested translucent surfaces, images, gradients, overlays, and blend modes change the result. Resolve and measure the complete stack, or use an appropriate opaque `effectiveColors` surface. Decorative grid/border/fill/bar tokens do not carry a certified non-text contrast guarantee; the demo uses a measured foreground for data-bearing volume bars.
 
-1. Normalize and parse the input background color.
-2. Calculate WCAG relative luminance and contrast ratio.
-3. Choose a readable text direction from black or white.
-4. Mix from the background toward the readable direction until target contrast is reached.
-5. Derive panel, border, grid, axis, chart fill, and bar colors.
-6. Adjust chart accent colors until they meet the minimum contrast target.
-7. Export the result as JavaScript data and CSS variables.
+## Accessibility boundaries
 
-The project does not use `mix-blend-mode` as the primary strategy. Blend modes are useful for visual effects, but they cannot reliably guarantee readability for dense charts and small UI text.
+ContrastFit solves a specific color-generation problem. It cannot certify arbitrary markup or compensate for an integration that ignores its output.
 
-## Project Structure
+- **Measurements:** WCAG relative luminance/contrast ratio, using the sRGB `0.04045` transfer breakpoint and final quantized colors. Panel/metric alpha fitting checks both fractional compositing and the published quantized effective colors.
+- **Background fitting:** compares nearby passing quantized candidates on black/white sRGB mixing paths using OKLab distance. It is not a globally minimal search over the entire RGB space.
+- **Series separation:** RGB distance ≥32 and OKLab distance ≥0.075 are engineering heuristics, not WCAG requirements or a color-vision-deficiency guarantee. Always use redundant encodings.
+- **Input scope:** opaque three-/six-digit HEX only. No RGB/HSL/OKLCH string parsing, alpha HEX, gradients, photographs, or live sampling of arbitrary page backgrounds.
+- **Rendering scope:** font size/weight, anti-aliasing, stroke width, focus indicators, adjacent colors, interaction states, semantics, and assistive-technology behavior remain the integrator's responsibility.
+- **Validation scope:** Chromium and axe checks cover the tested demo states, not every browser, device, or complete accessibility standard. Manual review of the integrated product is still required.
 
-```text
-.
-├── src/
-│   └── adaptive-palette.js
-├── examples/
-│   └── dashboard/
-│       ├── index.html
-│       ├── styles.css
-│       └── app.js
-├── docs/
-│   ├── index.html
-│   ├── styles.css
-│   └── architecture.md
-├── scripts/
-│   └── build-static.mjs
-├── test/
-│   └── adaptive-palette.test.js
-├── vercel.json
-├── package.json
-└── README.md
-```
+See [architecture](./docs/architecture.md) for algorithm decisions and [API reference](./docs/api.md) for the exact output contract.
 
-## Development
+## Development and verification
 
 ```bash
-npm test
-npm run check
-npm run build
-npm run dev
+npm ci --ignore-scripts
+npm run verify
+npx --no-install playwright install chromium
+npm run test:browser
 ```
 
-Scripts:
+Run browser checks against a current static build. `verify` builds it; after further changes run `npm run build` again.
 
-- `npm run dev` starts a local static server on `127.0.0.1:4173`
-- `npm run check` validates JavaScript syntax
-- `npm test` runs Node test coverage for the core palette engine
-- `npm run build` validates the project and writes static output to `public/`
+| Command | Purpose |
+| --- | --- |
+| `npm test` | Unit and contract tests, including exhaustive 4,096-short-HEX auto/preserve cases |
+| `npm run test:coverage` | Core gates: lines ≥95%, branches ≥85%, functions ≥95% |
+| `npm run typecheck` | Strict TypeScript declaration and consumer checks |
+| `npm run check` | JavaScript syntax checks |
+| `npm run check:naming` | Active-name consistency across source, configuration, filenames, and generated assets |
+| `npm run build:lib` | Generate ESM, CommonJS, browser-global, and declaration artifacts in `dist/` |
+| `npm run build` | Build package/static output and verify local asset references |
+| `npm run package:check` | Preview the package file list |
+| `npm run package:smoke` | Consume a real tarball from isolated temporary `node_modules`, exercising runtime formats and types |
+| `npm run test:browser` | Chromium rendering, interactions, responsive layouts, chart/data consistency, and axe checks |
+| `npm run dev` | Serve the demo on loopback only |
 
-## Deploy to Vercel
+The regression suite protects automatic resolution, preserved-input diagnostics, alpha-composite measurements, final CSS values, non-color chart encodings, and invalid-input handling. Coverage thresholds are gates, not reasons to weaken the product's targets.
 
-This project is static and does not require a backend or environment variables.
+CI is configured for Node.js **22, 24, and 26**, with a separate Chromium job. A successful local run is not evidence that those remote jobs have run. Development tools are pinned; the published runtime has **no dependencies**.
 
-Recommended Vercel settings:
+## Build and deploy the demo
 
-- Framework Preset: `Other`
-- Build Command: `npm run build`
-- Output Directory: `public`
-- Project Root: repository root
+```bash
+npm ci --ignore-scripts
+npm run build
+```
 
-The included `vercel.json` redirects `/` to `/examples/dashboard/` and adds basic static-site security headers.
+Deploy `public/` to a static host. For Vercel, use preset **Other**, build command **`npm run build`**, and output directory **`public`**. The included configuration redirects `/` to `/examples/dashboard/` and adds basic security headers.
 
-## Security
+The core and demo use no analytics, cookies, remote data fetching, or backend service. Static assets still require HTTP requests, and repository links open GitHub. This repository does not provision hosting or publish packages automatically.
 
-The demo is static and does not collect user data, access cookies, or send network requests. Inputs are limited to hex colors and validated before use. If you extend the demo to accept arbitrary text, remote JSON, or user-provided chart data, avoid injecting that content with `innerHTML`.
+## Project documentation
+
+- [Product guide](./docs/index.html): problem, workflow, capabilities, and integration boundaries.
+- [API reference](./docs/api.md): functions, data shapes, errors, and token semantics.
+- [Architecture](./docs/architecture.md): algorithm, quantization, compositing, and trade-offs.
+- [Migration guide](./MIGRATING.md): complete pre-release naming/API/CSS transition.
+- [Changelog](./CHANGELOG.md): behavior and distribution changes.
+- [Contributing](./CONTRIBUTING.md): development and regression expectations.
+- [Release process](./RELEASING.md): authorized publication, package ownership, and release gates.
+- [Security](./SECURITY.md): vulnerability reporting and supported scope.
 
 ## License
 
-MIT
+[MIT](./LICENSE). The original copyright notice is retained for attribution; active product names use ContrastFit.

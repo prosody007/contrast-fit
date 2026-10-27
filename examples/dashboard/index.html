@@ -3,20 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Adaptive Palette Dashboard Demo</title>
+    <title>ContrastFit — Automatic Contrast Repair for UI and Charts</title>
+    <meta name="description" content="Try ContrastFit: generate 17 semantic UI colors from a background, automatically repair contrast, and inspect chart styles, measurements, CSS, and JSON." />
+    <meta property="og:title" content="ContrastFit — UI colors with automatic contrast repair" />
+    <meta property="og:description" content="One background. Readable interface colors. Automatic fitting, honest measurements, and redundant chart encodings—without runtime dependencies." />
+    <meta property="og:type" content="website" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="dashboard">
       <header class="dashboard__header">
         <div>
-          <p class="dashboard__eyebrow">Open source demo</p>
-          <h1>Adaptive Palette</h1>
-          <p>Generate readable UI tokens from any background color.</p>
+          <p class="dashboard__eyebrow">Open-source color engine · Interactive demo</p>
+          <h1>ContrastFit</h1>
+          <p>UI color tokens with automatic contrast repair.</p>
         </div>
         <a
           class="github-link"
-          href="https://github.com/prosody007/adaptive-palette"
+          href="https://github.com/prosody007/contrast-fit"
           aria-label="Open GitHub repository"
           target="_blank"
           rel="noreferrer"
@@ -30,18 +34,46 @@
         </a>
       </header>
 
-      <section class="cards" aria-label="Adaptive palette examples">
-        <article class="chart-card js-adaptive-card" data-bg="#2B3548" data-offset="0">
+      <section class="product-intro" aria-label="What ContrastFit does">
+        <p>Choose a background. Get coordinated text, surfaces, status colors, and chart styles—not just a warning that your colors fail.</p>
+        <ul>
+          <li><strong>17 semantic colors</strong><span>Plain JavaScript, CSS variables, and TypeScript.</span></li>
+          <li><strong>Targets stay intact</strong><span>Content adjusts when necessary; your original color is preserved.</span></li>
+          <li><strong>More than color alone</strong><span>Distinct line patterns, markers, and readable chart data.</span></li>
+        </ul>
+      </section>
+
+      <div class="preview-actions" aria-label="Quick background examples">
+        <button class="js-preview-background" type="button" data-background="#777777">Try mid-gray · auto-fit</button>
+        <button class="js-preview-background" type="button" data-background="#2B3548">Reset first card</button>
+        <p>Your chosen color stays on the frame; content is adjusted only when needed.</p>
+      </div>
+
+      <section class="cards" aria-label="ContrastFit examples">
+        <article
+          class="chart-card js-contrast-card"
+          data-bg="#2B3548"
+          data-offset="0"
+          data-series-labels="Revenue|Activation|Expansion"
+          aria-labelledby="card-title-0"
+        >
           <header class="chart-card__header">
             <div>
               <p class="chart-card__eyebrow">Enterprise pipeline</p>
-              <h2>North America expansion</h2>
+              <h2 id="card-title-0">North America expansion</h2>
             </div>
             <div class="card-controls">
-              <input class="js-bg-picker color-picker" type="color" value="#2B3548" aria-label="Background color" />
-              <input class="js-bg-hex hex-input" type="text" value="#2B3548" aria-label="Background hex color" />
+              <input class="js-bg-picker color-picker" type="color" value="#2B3548" aria-label="North America expansion background color" />
+              <input class="js-bg-hex hex-input" type="text" value="#2B3548" aria-label="North America expansion background hex color" autocomplete="off" autocapitalize="off" spellcheck="false" />
+              <p class="palette-status js-palette-status" role="status" aria-live="polite" hidden></p>
             </div>
           </header>
+
+          <div class="palette-result" aria-label="Applied palette">
+            <span>Chosen <strong class="js-input-color"></strong></span>
+            <span>Content <strong class="js-resolved-color"></strong></span>
+            <span class="js-contrast-result"></span>
+          </div>
 
           <div class="metrics">
             <div class="metric">
@@ -66,26 +98,59 @@
             </div>
           </div>
 
-          <svg class="plot js-plot" viewBox="0 0 760 430" role="img" aria-label="Pipeline trend chart"></svg>
+          <div
+            class="chart-viewport"
+            tabindex="0"
+            role="region"
+            aria-label="North America expansion chart, horizontally scrollable"
+            aria-describedby="chart-scroll-hint-0"
+          >
+            <svg
+              class="plot js-plot"
+              viewBox="0 0 760 430"
+              role="img"
+              aria-label="Pipeline trend chart"
+              aria-describedby="chart-summary-0"
+            ></svg>
+          </div>
+          <p class="chart-scroll-hint" id="chart-scroll-hint-0">Scroll horizontally to explore the chart. When focused, use the left and right arrow keys.</p>
+          <p class="chart-summary js-chart-summary" id="chart-summary-0"></p>
+          <details class="data-table">
+            <summary>View chart data table</summary>
+            <div class="js-data-table" tabindex="0" role="region" aria-label="North America expansion chart data"></div>
+          </details>
 
           <footer class="legend">
-            <span><i class="legend-dot legend-dot--a"></i>Revenue</span>
-            <span><i class="legend-dot legend-dot--b"></i>Activation</span>
-            <span><i class="legend-dot legend-dot--c"></i>Expansion</span>
+            <span><svg class="legend-key" viewBox="0 0 30 12" aria-hidden="true"><line class="series-line line-a" x1="2" y1="6" x2="28" y2="6" /><circle class="point line-a" cx="15" cy="6" r="3.5" /></svg>Revenue</span>
+            <span><svg class="legend-key" viewBox="0 0 30 12" aria-hidden="true"><line class="series-line line-b" x1="2" y1="6" x2="28" y2="6" /><rect class="point line-b" x="12" y="3" width="6" height="6" /></svg>Activation</span>
+            <span><svg class="legend-key" viewBox="0 0 30 12" aria-hidden="true"><line class="series-line line-c" x1="2" y1="6" x2="28" y2="6" /><path class="point line-c" d="M 15 2 l 4 4 l -4 4 l -4 -4 Z" /></svg>Expansion</span>
           </footer>
         </article>
 
-        <article class="chart-card js-adaptive-card" data-bg="#F5F7F9" data-offset="7">
+        <article
+          class="chart-card js-contrast-card"
+          data-bg="#F5F7F9"
+          data-offset="7"
+          data-series-labels="Usage|Solver|Quality"
+          aria-labelledby="card-title-1"
+        >
           <header class="chart-card__header">
             <div>
               <p class="chart-card__eyebrow">Product adoption</p>
-              <h2>iOS feature velocity</h2>
+              <h2 id="card-title-1">iOS feature velocity</h2>
             </div>
             <div class="card-controls">
-              <input class="js-bg-picker color-picker" type="color" value="#F5F7F9" aria-label="Background color" />
-              <input class="js-bg-hex hex-input" type="text" value="#F5F7F9" aria-label="Background hex color" />
+              <input class="js-bg-picker color-picker" type="color" value="#F5F7F9" aria-label="iOS feature velocity background color" />
+              <input class="js-bg-hex hex-input" type="text" value="#F5F7F9" aria-label="iOS feature velocity background hex color" autocomplete="off" autocapitalize="off" spellcheck="false" />
+              <p class="palette-status js-palette-status" role="status" aria-live="polite" hidden></p>
             </div>
           </header>
+
+          <div class="palette-result" aria-label="Applied palette">
+            <span>Chosen <strong class="js-input-color"></strong></span>
+            <span>Content <strong class="js-resolved-color"></strong></span>
+            <span class="js-contrast-result"></span>
+          </div>
 
           <div class="metrics">
             <div class="metric">
@@ -110,14 +175,58 @@
             </div>
           </div>
 
-          <svg class="plot js-plot" viewBox="0 0 760 430" role="img" aria-label="Product adoption chart"></svg>
+          <div
+            class="chart-viewport"
+            tabindex="0"
+            role="region"
+            aria-label="iOS feature velocity chart, horizontally scrollable"
+            aria-describedby="chart-scroll-hint-1"
+          >
+            <svg
+              class="plot js-plot"
+              viewBox="0 0 760 430"
+              role="img"
+              aria-label="Product adoption chart"
+              aria-describedby="chart-summary-1"
+            ></svg>
+          </div>
+          <p class="chart-scroll-hint" id="chart-scroll-hint-1">Scroll horizontally to explore the chart. When focused, use the left and right arrow keys.</p>
+          <p class="chart-summary js-chart-summary" id="chart-summary-1"></p>
+          <details class="data-table">
+            <summary>View chart data table</summary>
+            <div class="js-data-table" tabindex="0" role="region" aria-label="iOS feature velocity chart data"></div>
+          </details>
 
           <footer class="legend">
-            <span><i class="legend-dot legend-dot--a"></i>Usage</span>
-            <span><i class="legend-dot legend-dot--b"></i>Solver</span>
-            <span><i class="legend-dot legend-dot--c"></i>Quality</span>
+            <span><svg class="legend-key" viewBox="0 0 30 12" aria-hidden="true"><line class="series-line line-a" x1="2" y1="6" x2="28" y2="6" /><circle class="point line-a" cx="15" cy="6" r="3.5" /></svg>Usage</span>
+            <span><svg class="legend-key" viewBox="0 0 30 12" aria-hidden="true"><line class="series-line line-b" x1="2" y1="6" x2="28" y2="6" /><rect class="point line-b" x="12" y="3" width="6" height="6" /></svg>Solver</span>
+            <span><svg class="legend-key" viewBox="0 0 30 12" aria-hidden="true"><line class="series-line line-c" x1="2" y1="6" x2="28" y2="6" /><path class="point line-c" d="M 15 2 l 4 4 l -4 4 l -4 -4 Z" /></svg>Quality</span>
           </footer>
         </article>
+      </section>
+
+      <section class="engine-output" id="engine-output" aria-labelledby="engine-output-title">
+        <header>
+          <p class="dashboard__eyebrow">Inspect the actual engine output</p>
+          <h2 id="engine-output-title">One input. A complete color plan.</h2>
+          <p>This inspector follows the first card. Change its background above to see the generated tokens, effective surface colors, and applied repairs.</p>
+        </header>
+        <p class="repair-output js-repair-output" role="status" aria-live="polite"></p>
+        <ul class="token-grid js-token-output" aria-label="Generated color tokens"></ul>
+        <details class="output-details">
+          <summary>Inspect all 17 CSS custom properties</summary>
+          <pre tabindex="0" role="region" aria-label="CSS custom properties output"><code class="js-css-output"></code></pre>
+        </details>
+        <details class="output-details">
+          <summary>Inspect the full JSON result and measurements</summary>
+          <pre tabindex="0" role="region" aria-label="JSON palette output"><code class="js-json-output"></code></pre>
+        </details>
+        <p class="integration-note">Apply the resolved content background and the supplied chart styles. Transparent tokens assume one layer over that background; an integrated page still needs rendering and accessibility review.</p>
+        <nav class="product-links" aria-label="Project resources">
+          <a href="../../docs/">Read the product guide</a>
+          <a href="../../README.md">README and integration examples</a>
+          <a href="../../docs/api.md">API reference</a>
+        </nav>
       </section>
     </main>
 

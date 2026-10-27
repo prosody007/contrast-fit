@@ -3,89 +3,232 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Adaptive Palette Docs</title>
+    <title>ContrastFit — contrast-aware UI colors from one background</title>
+    <meta name="description" content="Fit text, surfaces, chart colors, and status pairs to one background. ContrastFit provides 17 semantic tokens, measured contrast, and traceable automatic repairs." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ContrastFit" />
+    <meta property="og:title" content="ContrastFit — one background, a measured UI palette" />
+    <meta property="og:description" content="A deterministic, dependency-free JavaScript color engine with automatic contrast repair, semantic CSS tokens, and redundant chart styles." />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="ContrastFit — contrast-aware UI colors" />
+    <meta name="twitter:description" content="Turn one opaque background into 17 semantic tokens with measured contrast and inspectable repairs. Use in modern browsers or Node.js 22+." />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="docs">
       <nav class="topbar" aria-label="Documentation navigation">
-        <a class="brand" href="../examples/dashboard/">Adaptive Palette</a>
+        <a class="brand" href="./">ContrastFit</a>
+        <a href="./api.md">API reference</a>
+        <a href="https://github.com/prosody007/contrast-fit">GitHub</a>
         <a class="button" href="../examples/dashboard/">Open demo</a>
       </nav>
 
       <header class="hero">
-        <p class="eyebrow">Documentation</p>
-        <h1>Generate readable UI colors from one background.</h1>
+        <p class="eyebrow">One background. A measured UI palette.</p>
+        <h1>Fit the contrast.<br />Keep the context.</h1>
         <p>
-          Adaptive Palette is a small, framework-agnostic color engine for AI-generated dashboards,
-          charts, cards, and dynamic UI surfaces.
+          ContrastFit turns one opaque background into semantic colors for text, surfaces,
+          charts, and status labels. When the input cannot support your contrast targets,
+          it fits the content background instead of quietly lowering the bar—and keeps the
+          original choice and the repair visible.
+        </p>
+        <p>
+          Deterministic JavaScript. Zero runtime dependencies. Modern browsers and Node.js 22+.
+          <a href="../examples/dashboard/">Try a background in the live demo</a> or
+          <a href="./api.md">read the complete API</a>.
         </p>
       </header>
 
-      <section class="section">
-        <h2>What It Solves</h2>
+      <section class="section" aria-labelledby="problems">
+        <h2 id="problems">From a color choice to a usable starting point</h2>
         <div class="grid">
           <article>
-            <h3>Low contrast output</h3>
-            <p>Generated UI often ships with text and chart lines that disappear on dark or light backgrounds.</p>
+            <h3>Dynamic backgrounds, predictable text</h3>
+            <p>User-selected colors can leave fixed light/dark themes in the middle. Fit foregrounds and, when needed, the content background to explicit targets.</p>
           </article>
           <article>
-            <h3>Theme maintenance cost</h3>
-            <p>Instead of manually maintaining separate light and dark palettes, provide one base color.</p>
+            <h3>One semantic vocabulary</h3>
+            <p>Generate the same 17 roles for cards, dashboards, and charts instead of hand-maintaining unrelated color values for every theme.</p>
           </article>
           <article>
-            <h3>Unstable generated visuals</h3>
-            <p>The same algorithm produces deterministic semantic tokens for text, borders, charts, and status tags.</p>
+            <h3>Inspect the actual result</h3>
+            <p>Keep original and resolved backgrounds separate. Inspect final-color ratios, effective alpha composites, target flags, and recorded adjustments.</p>
           </article>
         </div>
       </section>
 
-      <section class="section">
-        <h2>Usage</h2>
-        <pre><code>import {
-  applyPaletteToElement,
-  createAdaptivePalette,
-} from "./src/adaptive-palette.js";
-
-const card = document.querySelector(".card");
-const palette = createAdaptivePalette("#2B3548");
-
-applyPaletteToElement(card, palette);</code></pre>
+      <section class="section" aria-labelledby="workflow">
+        <h2 id="workflow">Three steps to integrate</h2>
+        <div class="grid">
+          <article>
+            <h3>1. Choose the input</h3>
+            <p>Pass an opaque three- or six-digit hex background. Keep the defaults or set explicit text, muted, series, and surface targets.</p>
+          </article>
+          <article>
+            <h3>2. Generate and inspect</h3>
+            <p>Call <code>createContrastFit</code>. Read the resolved background, numeric results, and any repairs. Choose preserve mode only when exact input pixels are mandatory.</p>
+          </article>
+          <article>
+            <h3>3. Apply and validate</h3>
+            <p>Consume the CSS variables and chart dash/marker instructions. Test the rendered layers, labels, interactions, and accessibility in your application.</p>
+          </article>
+        </div>
       </section>
 
-      <section class="section">
-        <h2>Generated Tokens</h2>
+      <section class="section" aria-labelledby="repair">
+        <h2 id="repair">A repair you can explain</h2>
+        <p>
+          Mid-gray cannot support the default 8:1 text target, even with black or white text.
+          The default auto strategy finds a nearby passing background along black/white mixing
+          paths; it does not pretend the original input passed.
+        </p>
+        <div class="grid">
+          <article>
+            <h3>Requested</h3>
+            <p><code>#777777</code> background<br />Best black text: approximately 4.69:1<br />Below the 8:1 target.</p>
+          </article>
+          <article>
+            <h3>Resolved</h3>
+            <p><code>#A0A0A0</code> content background<br /><code>#000000</code> text: approximately 8.03:1<br />The requested target is retained.</p>
+          </article>
+          <article>
+            <h3>Traceable</h3>
+            <p><code>inputBackground</code> retains <code>#777777</code>. A <code>background</code> adjustment records the change. The original can still frame the content.</p>
+          </article>
+        </div>
+        <p>
+          This is the current default result, not a global minimum over all RGB colors.
+          <a href="./architecture.md">See how the fitting algorithm works</a>.
+        </p>
+      </section>
+
+      <section class="section" aria-labelledby="usage">
+        <h2 id="usage">Start from source or a local tarball</h2>
+        <p>
+          ContrastFit is pre-release; no public npm release is currently documented.
+          This example uses a repository-root source import. For local package installation,
+          ESM/CommonJS, browser globals, and TypeScript, see the
+          <a href="./api.md">distribution guide and API reference</a>.
+        </p>
+        <pre><code>import {
+  createContrastFit,
+  applyPaletteToElement,
+} from "./src/contrast-fit.js";
+
+const card = document.querySelector(".card");
+const palette = createContrastFit("#777777");
+
+if (card) {
+  applyPaletteToElement(card, palette);
+}
+
+console.log(palette.inputBackground); // #777777
+console.log(palette.background);      // #A0A0A0
+console.log(palette.adjustments);     // inspect the applied repair</code></pre>
+        <pre><code>.card {
+  background: var(--contrast-fit-bg);
+  color: var(--contrast-fit-text);
+}
+
+.card__secondary {
+  color: var(--contrast-fit-muted);
+}</code></pre>
+        <p>
+          Writing custom properties does not restyle a page by itself: the host stylesheet
+          must use them. Alpha-bearing surfaces are measured as one layer directly over the
+          resolved background, not as arbitrarily nested translucent cards.
+        </p>
+      </section>
+
+      <section class="section" aria-labelledby="tokens">
+        <h2 id="tokens">17 roles, not a bag of swatches</h2>
+        <p>
+          Text and muted text, two surfaces, supporting chart graphics, three series, and two
+          status pairs share one resolved background. Seven alpha-bearing roles also expose
+          their applied alpha and effective opaque color for inspection or alternate rendering.
+        </p>
         <ul class="token-list">
-          <li><code>--adaptive-bg</code></li>
-          <li><code>--adaptive-text</code></li>
-          <li><code>--adaptive-muted</code></li>
-          <li><code>--adaptive-border</code></li>
-          <li><code>--adaptive-grid</code></li>
-          <li><code>--adaptive-axis</code></li>
-          <li><code>--adaptive-series-a</code></li>
-          <li><code>--adaptive-series-b</code></li>
-          <li><code>--adaptive-series-c</code></li>
-          <li><code>--adaptive-good-bg</code></li>
-          <li><code>--adaptive-warn-bg</code></li>
+          <li><code>--contrast-fit-bg</code></li>
+          <li><code>--contrast-fit-text</code></li>
+          <li><code>--contrast-fit-muted</code></li>
+          <li><code>--contrast-fit-panel</code></li>
+          <li><code>--contrast-fit-metric</code></li>
+          <li><code>--contrast-fit-border</code></li>
+          <li><code>--contrast-fit-grid</code></li>
+          <li><code>--contrast-fit-axis</code></li>
+          <li><code>--contrast-fit-plot-fill</code></li>
+          <li><code>--contrast-fit-bars</code></li>
+          <li><code>--contrast-fit-series-a</code></li>
+          <li><code>--contrast-fit-series-b</code></li>
+          <li><code>--contrast-fit-series-c</code></li>
+          <li><code>--contrast-fit-good-bg</code></li>
+          <li><code>--contrast-fit-good-text</code></li>
+          <li><code>--contrast-fit-warn-bg</code></li>
+          <li><code>--contrast-fit-warn-text</code></li>
         </ul>
       </section>
 
-      <section class="section">
-        <h2>How It Works</h2>
+      <section class="section" aria-labelledby="portable">
+        <h2 id="portable">Portable calculation, deliberate rendering</h2>
+        <div class="grid">
+          <article>
+            <h3>Browser or server</h3>
+            <p>Use named exports through ESM or CommonJS, or a built browser script exposing <code>globalThis.ContrastFit</code>. Calculation and CSS-map generation do not need a DOM.</p>
+          </article>
+          <article>
+            <h3>Your framework, your styles</h3>
+            <p>Apply variables to one element, or pass a CSS map through your renderer. No bundled React/Vue adapter, WASM module, or CLI is required or claimed.</p>
+          </article>
+          <article>
+            <h3>Charts beyond color alone</h3>
+            <p>Render circle/square/diamond markers and solid/<code>9 5</code>/<code>2 5</code> line patterns. Match the legend, and provide labels or a data table.</p>
+          </article>
+        </div>
         <p>
-          The engine uses WCAG relative luminance and contrast ratio calculations. It chooses a readable
-          direction, mixes colors from the background toward that direction, adjusts chart accents until
-          they meet the target contrast, then exports the results as CSS custom properties.
-        </p>
-        <p>
-          It does not rely on <code>mix-blend-mode</code> as the primary strategy, because blend modes are
-          useful visual effects but cannot reliably guarantee readability for dense charts and small UI text.
+          The dashboard demonstrates independent cards, actual plotted data, redundant series
+          encodings, and a chart data table. The palette result stays framework-independent;
+          the host owns layout, geometry, semantics, and interactions.
         </p>
       </section>
 
-      <section class="section">
-        <h2>Deploy</h2>
-        <p>This is a static project. On Vercel, use <code>npm run build</code>; the build creates the <code>public/</code> output directory.</p>
+      <section class="section" aria-labelledby="boundaries">
+        <h2 id="boundaries">Measured contrast, honest boundaries</h2>
+        <p>
+          Defaults are 8:1 for text, 4.7:1 for muted text, 3.3:1 for series, and 4.5:1 for
+          panel/metric text and status pairs. <code>usable</code> means all measured numeric
+          contrast targets pass. It excludes color-only series distinctness and cannot detect
+          whether your renderer applies the supplied chart styles.
+        </p>
+        <p>
+          Preserve mode can leave unresolved targets. An auto-fitted palette is still not a
+          whole-page WCAG certificate or a color-vision-deficiency guarantee. Gradients, images,
+          nested alpha, typography, non-text graphic visibility, focus states, and surrounding
+          content require integration review. The engine measures final quantized colors and
+          checks fractional composites during surface fitting; your browser renders the complete page.
+        </p>
+        <p>
+          Core regressions, rendered contrast samples, chart-data checks, and automated axe
+          checks provide evidence for defined cases—not universal accessibility. See
+          <a href="./architecture.md">architecture and test scope</a> and
+          <a href="../CONTRIBUTING.md">contribution checks</a>.
+        </p>
+      </section>
+
+      <section class="section" aria-labelledby="next">
+        <h2 id="next">Explore the project</h2>
+        <p>
+          <a href="../examples/dashboard/">Interactive dashboard</a> ·
+          <a href="./api.md">Complete API and errors</a> ·
+          <a href="./architecture.md">Architecture</a> ·
+          <a href="../MIGRATING.md">Migration guide</a> ·
+          <a href="../RELEASING.md">Release checklist</a> ·
+          <a href="https://github.com/prosody007/contrast-fit">Source on GitHub</a>
+        </p>
+        <p>
+          The site is static. With development tools installed, <code>npm run build</code>
+          creates the <code>public/</code> deployment output. Building or deploying the site
+          does not publish an npm package. License: <a href="../LICENSE">MIT</a>.
+        </p>
       </section>
     </main>
   </body>

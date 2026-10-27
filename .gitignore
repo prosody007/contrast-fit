@@ -4,3 +4,9 @@ dist/
 public/
 coverage/
 .env
+
+# Local npm archives are release artifacts, not source.
+*.tgz
+.cache/
+playwright-report/
+test-results/
