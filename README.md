@@ -6,7 +6,7 @@
 
 ![Actual ContrastFit Studio: sustained native color-picker drags continuously adapt a project workspace and Analytics chart while fixture text, data, and line/marker encodings stay stable.](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.gif)
 
-**Prefer no motion?** [View the still preview](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.png). [Watch the 26-second video with playback controls](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.mp4). The recording uses the real app's native color chooser: each scene shows a sustained hue-bar drag followed by a saturation/value drag, with the same fixture text and data while the resolved background, text, status colors, and Analytics chart series adapt continuously. GitHub does not pause embedded GIFs for reduced-motion preferences; choose the still image instead.
+**Prefer no motion?** [View the still preview](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.png). [Watch the 13-second video at 2× speed with playback controls](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.mp4). The recording uses the real app's native color chooser: each scene shows a sustained hue-bar drag followed by a saturation/value drag, with the same fixture text and data while the resolved background, text, status colors, and Analytics chart series adapt continuously. GitHub does not pause embedded GIFs for reduced-motion preferences; choose the still image instead.
 
 ## Quick start
 
