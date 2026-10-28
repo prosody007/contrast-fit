@@ -1,8 +1,36 @@
 # ContrastFit
 
-**UI color tokens with automatic contrast repair.**
+**Change one background. Get a readable UI and chart palette automatically.**
 
-Turn one background color into a coordinated set of interface and chart colors—then use the result, rather than manually repairing a list of contrast warnings.
+[npm · v0.1.0](https://www.npmjs.com/package/contrast-fit/v/0.1.0) · [Try the live demo](https://prosody007.github.io/contrast-fit/) · [Release notes](https://github.com/prosody007/contrast-fit/releases/tag/v0.1.0)
+
+![Actual ContrastFit Studio: switch a project workspace from dark to light, repair #777777 automatically, and adapt chart colors while keeping line and marker encodings.](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.gif)
+
+**Prefer no motion?** [View the still preview](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.png). [Watch the 24-second video with playback controls](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.mp4). The recording uses the real app: dark/light presets, `#777777` → the resolved content background, and independently adapting chart colors with solid/dashed/dotted lines and distinct markers. GitHub does not pause embedded GIFs for reduced-motion preferences; choose the still image instead.
+
+## Quick start
+
+```bash
+npm install contrast-fit
+```
+
+Add `<section id="preview">Readable content, on your chosen background.</section>` to your page. In your application's JavaScript module (with a package resolver):
+
+```js
+import { createContrastFit, applyPaletteToElement } from "contrast-fit";
+
+const preview = document.querySelector("#preview");
+const palette = createContrastFit("#777777");
+applyPaletteToElement(preview, palette);
+Object.assign(preview.style, {
+  backgroundColor: "var(--contrast-fit-bg)",
+  color: "var(--contrast-fit-text)",
+});
+```
+
+Apply **both** the resolved background and foreground: the original `#777777` is retained as `palette.inputBackground`, while `palette.background` is fitted to your targets. Use the remaining CSS variables for surfaces, statuses and charts; [apply the chart encodings too](#chart-identity-is-more-than-color).
+
+## What you get
 
 ContrastFit is a deterministic, framework-independent JavaScript color engine for dashboards, embedded widgets, cards, and user-customizable interfaces. It fits text, surfaces, status pairs, and three chart series to your requested contrast targets. If the original background cannot support those targets, the default strategy adjusts the content background and preserves the original input separately. **It does not silently lower your targets.**
 
@@ -12,9 +40,9 @@ ContrastFit is a deterministic, framework-independent JavaScript color engine fo
 - **ES modules, CommonJS, and a standalone browser script**, with TypeScript declarations.
 - **SSR-safe CSS serialization**, optional DOM application, and **zero runtime dependencies**.
 
-> **Release status:** [`contrast-fit@0.1.0`](https://www.npmjs.com/package/contrast-fit/v/0.1.0) is published on npm under `latest`, independently installed and verified from the official registry. This first usable **0.x release is early access**, not a 1.0 API-stability promise or WCAG certification. [Release notes and exact archive/checksums](https://github.com/prosody007/contrast-fit/releases/tag/v0.1.0) identify the tested package source; current documentation lives on `main`.
+> **Release status:** [`contrast-fit@0.1.0`](https://www.npmjs.com/package/contrast-fit/v/0.1.0) is already published on npm under `latest`. This first usable **0.x release is early access**, not a 1.0 API-stability promise or WCAG certification. [Release notes and exact archive/checksums](https://github.com/prosody007/contrast-fit/releases/tag/v0.1.0) identify the tested package source; current documentation and demo live on `main`. This demo/documentation refresh does not republish the package or change the existing npm README.
 
-[Live demo](https://prosody007.github.io/contrast-fit/) · [CI](https://github.com/prosody007/contrast-fit/actions/workflows/ci.yml) · [Quick start](#quick-start) · [What it solves](#what-it-solves) · [Integration](#integration) · [API](#api-overview) · [Accessibility boundaries](#accessibility-boundaries) · [Development](#development-and-verification) · [Migration](./MIGRATING.md)
+[CI](https://github.com/prosody007/contrast-fit/actions/workflows/ci.yml) · [What it solves](#what-it-solves) · [Installation & local development](#installation--local-development) · [Integration](#integration) · [API](#api-overview) · [Accessibility boundaries](#accessibility-boundaries) · [Development](#development-and-verification) · [Migration](./MIGRATING.md)
 
 ## What it solves
 
@@ -67,7 +95,7 @@ These are reproducible examples, not a promise to preserve every requested backg
 
 This is **not** a palette-inspiration generator, an image color extractor, a full design system, a page-wide accessibility scanner, or a WCAG certification service. It does not use AI or make network requests.
 
-## Quick start
+## Installation & local development
 
 ### Run the interactive demo
 

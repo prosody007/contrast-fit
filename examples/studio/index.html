@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="ContrastFit Studio: four independent color previews with automatic contrast fitting." />
-  <meta property="og:title" content="ContrastFit Studio — Color that works in context" />
-  <meta property="og:description" content="Four color previews. Independent palettes. Automatic contrast fitting. Real engine. Zero runtime dependencies." />
+  <meta name="description" content="Change one background. Get a readable UI and chart palette automatically. Four real-engine previews." />
+  <meta property="og:title" content="ContrastFit Studio — Change one background." />
+  <meta property="og:description" content="Change one background. Get a readable UI and chart palette automatically. Measured color relationships, not whole-page accessibility certification." />
   <meta property="og:type" content="website" />
-  <title>ContrastFit Studio — Color that works.</title>
+  <title>ContrastFit Studio — Change one background.</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23233ee0'/%3E%3Cpath d='M22 9a9 9 0 1 0 0 14M16 7v18' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./studio.css" />
   <script type="module" src="./studio.js"></script>
@@ -15,7 +15,7 @@
 <body>
 <a class="skip-link" href="#workspace">Skip to examples</a>
 <header class="site-header"><a class="brand" href="./" aria-label="ContrastFit Studio home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M23 9a9 9 0 1 0 0 14M16 7v18"/></svg>ContrastFit <span>Studio</span></a><nav aria-label="Main navigation"><a href="../../docs/">Docs ↗</a><a href="https://github.com/prosody007/contrast-fit">GitHub ↗</a></nav></header>
-<main><section class="intro" aria-labelledby="page-title"><div><h1 id="page-title">Color, in context.</h1><p>Change a background. See every color adapt.</p></div><span class="edition">ContrastFit 0.1.0<br />17 tokens · zero dependencies</span></section>
+<main><section class="intro" aria-labelledby="page-title"><div><h1 id="page-title">Change one background.</h1><p>Get a readable UI and chart palette automatically.</p></div><span class="edition">ContrastFit 0.1.0<br />17 tokens · zero dependencies</span></section>
 <div id="workspace" class="gallery" tabindex="-1">
 <article id="example-interface" class="example example-interface" data-example="interface"><header class="example-heading"><div><h2><span>01</span><a href="#example-interface">Project workspace</a></h2><p>Text, surfaces, and status at a glance.</p></div></header>
 <div class="palette-bar"><label class="example-color" for="interface-background"><span class="sr-only">Project workspace background</span><input type="color" id="interface-picker" value="#243044" aria-label="Pick project workspace background" data-example-picker="interface" /><input type="text" id="interface-background" value="#243044" spellcheck="false" autocomplete="off" aria-describedby="interface-error interface-feedback" data-example-background="interface" /></label><div class="example-presets" role="group" aria-label="Project workspace background presets"><button type="button" data-example-preset="interface" data-color="#243044" aria-label="Project workspace: Slate, #243044" aria-pressed="true"><i style="background:#243044" aria-hidden="true"></i><span>Slate</span></button><button type="button" data-example-preset="interface" data-color="#F2F4F6" aria-label="Project workspace: Paper, #F2F4F6" aria-pressed="false"><i style="background:#F2F4F6" aria-hidden="true"></i><span>Paper</span></button><button type="button" data-example-preset="interface" data-color="#777777" aria-label="Project workspace: Middle, #777777" aria-pressed="false"><i style="background:#777777" aria-hidden="true"></i><span>Middle</span></button></div><button type="button" class="example-reset" data-example-reset="interface" aria-label="Reset project workspace palette">Reset</button><p id="interface-feedback" class="palette-feedback" role="status" aria-live="polite"></p><p id="interface-error" class="field-error" hidden></p></div><div class="preview-frame" id="preview-frame"><div class="live-preview" id="live-preview"><section id="scene-interface" class="scene scene-workspace" aria-label="Project colors preview">
