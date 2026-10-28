@@ -4,9 +4,9 @@
 
 [npm · v0.1.0](https://www.npmjs.com/package/contrast-fit/v/0.1.0) · [Try the live demo](https://prosody007.github.io/contrast-fit/) · [Release notes](https://github.com/prosody007/contrast-fit/releases/tag/v0.1.0)
 
-![Actual ContrastFit Studio: switch a project workspace from dark to light, repair #777777 automatically, and adapt chart colors while keeping line and marker encodings.](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.gif)
+![Actual ContrastFit Studio: sustained native color-picker drags continuously adapt a project workspace and Analytics chart while fixture text, data, and line/marker encodings stay stable.](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.gif)
 
-**Prefer no motion?** [View the still preview](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.png). [Watch the 24-second video with playback controls](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.mp4). The recording uses the real app: dark/light presets, `#777777` → the resolved content background, and independently adapting chart colors with solid/dashed/dotted lines and distinct markers. GitHub does not pause embedded GIFs for reduced-motion preferences; choose the still image instead.
+**Prefer no motion?** [View the still preview](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.png). [Watch the 26-second video with playback controls](https://prosody007.github.io/contrast-fit/examples/studio/media/contrast-fit-demo.mp4). The recording uses the real app's native color chooser: each scene shows a sustained hue-bar drag followed by a saturation/value drag, with the same fixture text and data while the resolved background, text, status colors, and Analytics chart series adapt continuously. GitHub does not pause embedded GIFs for reduced-motion preferences; choose the still image instead.
 
 ## Quick start
 
