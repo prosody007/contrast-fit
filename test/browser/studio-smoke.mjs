@@ -7,7 +7,7 @@ import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import axe from "axe-core";
-import { createContrastFit, paletteToCssVariables, contrastRatio, parseHex } from "../../src/contrast-fit.js";
+import { createContrastFit } from "../../src/contrast-fit.js";
 import { verifyScenarios } from "./studio-scenarios.mjs";
 
 const args = process.argv.slice(2);
@@ -36,10 +36,8 @@ server.listen(0, "127.0.0.1"); await once(server, "listening");
 const origin = `http://127.0.0.1:${server.address().port}`;
 const base = `${origin}${mount}`;
 const defaults = { backgroundStrategy: "auto", textContrast: 8, mutedContrast: 4.7, accentContrast: 3.3, surfaceTextContrast: 4.5, accents: { seriesA: "#18B7A6", seriesB: "#F06B8A", seriesC: "#8F7DFF" } };
-const stable = (value) => typeof value === "number" ? Number(value.toFixed(11)) : Array.isArray(value) ? value.map(stable) : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).map(([key, child]) => [key, stable(child)])) : value;
 const hex = (css) => "#" + css.match(/[\d.]+/g).slice(0, 3).map((value) => Math.round(Number(value)).toString(16).padStart(2, "0")).join("").toUpperCase();
 const rgb = (color) => color.startsWith("#") ? [1, 3, 5].map((index) => parseInt(color.slice(index, index + 2), 16)) : color.match(/[\d.]+/g).map(Number);
-const composite = (color, background) => color.slice(0, 3).map((channel, index) => Math.round(channel * (color[3] ?? 1) + background[index] * (1 - (color[3] ?? 1))));
 // Independent WCAG/sRGB calculation: raster regression must not trust the engine's
 // background-only metric or merely compare CSS stroke declarations.
 function renderedRatio(foreground, background) {
@@ -54,7 +52,7 @@ const pixelReports = [];
 let browser;
 try {
   browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 1100 }, acceptDownloads: true });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1100 } });
   const page = await context.newPage(); page.setDefaultTimeout(10000);
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -63,104 +61,23 @@ try {
   page.on("response", (response) => { if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`); });
   await page.goto(base, { waitUntil: "networkidle" });
   await page.waitForURL(`${base}examples/studio/`);
-  await page.locator("#palette-lab").evaluate((e) => { e.open = true; });
-  await page.locator("[data-token-index='16']").waitFor();
-  await page.locator("#advanced-controls").evaluate((element) => { element.open = true; });
+  await page.locator("#chart .series-path").first().waitFor();
   assert.match(await page.title(), /Studio/);
-  assert.equal(await page.locator("#resolved-color").textContent(), createContrastFit("#243044").background);
 
-  async function choosePanel(name) { await page.locator(`[data-panel=${name}]`).click(); }
-  async function chooseFormat(name) { await page.locator(`[data-format=${name}]`).click(); }
-  async function json() { await choosePanel("export"); await chooseFormat("json"); return JSON.parse(await page.locator("#export-output").textContent()); }
   async function axeCheck(label) {
     await page.addScriptTag({ content: axe.source });
     const violations = await page.evaluate(async () => (await window.axe.run(document)).violations.map(({ id, impact, nodes }) => ({ id, impact, targets: nodes.map((item) => item.target) })));
     assert.deepEqual(violations.filter(({ impact }) => ["serious", "critical"].includes(impact)), [], `${label}: serious/critical axe violations: ${JSON.stringify(violations)}`);
     console.log(`PASS Studio axe: ${label}`);
   }
-  async function fill(id, value) { await page.locator(`#${id}`).fill(value); await page.locator(`#${id}`).press("Enter"); }
-  async function verifyEngine(background, options = defaults, prefix = "contrast-fit", browserEngine = false) {
-    const expected = browserEngine ? await page.evaluate(async ({ background, options, source }) => {
-      const { createContrastFit } = await import(source);
-      return createContrastFit(background, options);
-    }, { background, options, source: `${base}src/contrast-fit.js` }) : createContrastFit(background, options);
-    const actual = await json();
-    assert.equal(actual.version, "0.1.0"); assert.equal(actual.inputBackground, expected.inputBackground);
-    assert.deepEqual(stable(actual.options), stable(options)); assert.equal(actual.prefix, prefix);
-    assert.deepEqual(stable(actual.palette), stable(expected), "full JSON matches actual source engine");
-    assert.deepEqual(actual.cssVariables, paletteToCssVariables(expected, prefix));
-    const rendered = await page.locator("#live-preview").evaluate((element) => ({
-      background: getComputedStyle(element).backgroundColor, text: getComputedStyle(element).color,
-      variables: Object.fromEntries([...element.style].filter((name) => name.startsWith("--contrast-fit-")).map((name) => [name, getComputedStyle(element).getPropertyValue(name).trim()])),
-      frame: getComputedStyle(document.querySelector("#preview-frame")).borderTopColor,
-      metric: getComputedStyle(element.querySelector(".sample-metric")).backgroundColor,
-      panel: getComputedStyle(element.querySelector(".sample-panel")).backgroundColor,
-      muted: getComputedStyle(element.querySelector(".sample-muted")).color,
-      goodBg: getComputedStyle(element.querySelector(".good")).backgroundColor,
-      goodText: getComputedStyle(element.querySelector(".good")).color,
-      warnBg: getComputedStyle(element.querySelector(".warn")).backgroundColor,
-      warnText: getComputedStyle(element.querySelector(".warn")).color,
-    }));
-    assert.equal(hex(rendered.background), expected.background); assert.equal(hex(rendered.text), expected.colors.text);
-    assert.equal(hex(rendered.frame), expected.inputBackground); assert.equal(hex(rendered.muted), expected.colors.muted);
-    assert.equal(hex(rendered.goodBg), expected.colors.goodBg); assert.equal(hex(rendered.goodText), expected.colors.goodText);
-    assert.equal(hex(rendered.warnBg), expected.colors.warnBg); assert.equal(hex(rendered.warnText), expected.colors.warnText);
-    assert.deepEqual(rendered.variables, paletteToCssVariables(expected));
-    assert.equal(rendered.metric, expected.colors.metric); assert.equal(rendered.panel, expected.colors.panel);
-    const bg = rgb(rendered.background);
-    const domRatios = {
-      text: renderedRatio(rgb(rendered.text), bg), muted: renderedRatio(rgb(rendered.muted), bg),
-      panelText: renderedRatio(rgb(rendered.text), composite(rgb(rendered.panel), bg)),
-      panelMuted: renderedRatio(rgb(rendered.muted), composite(rgb(rendered.panel), bg)),
-      metricText: renderedRatio(rgb(rendered.text), composite(rgb(rendered.metric), bg)),
-      metricMuted: renderedRatio(rgb(rendered.muted), composite(rgb(rendered.metric), bg)),
-      goodText: renderedRatio(rgb(rendered.goodText), rgb(rendered.goodBg)),
-      warnText: renderedRatio(rgb(rendered.warnText), rgb(rendered.warnBg)),
-    };
-    for (const [key, actualRatio] of Object.entries(domRatios)) assert.ok(Math.abs(actualRatio - expected.metrics[`${key}Contrast`]) < 1e-10, `${key}: real rendered role relationship agrees with the reported metric`);
-    for (const key of ["seriesA", "seriesB", "seriesC"]) {
-      const applied = page.locator(`#${key}-applied`);
-      const retained = options.accents[key] === expected.colors[key];
-      assert.equal(await applied.getAttribute("data-color"), expected.colors[key]);
-      assert.equal(await applied.getAttribute("data-retained"), String(retained));
-      assert.ok((await applied.textContent()).includes(`Applied ${expected.colors[key]}`));
-      assert.equal(await applied.locator("strong").textContent(), retained ? "Seed retained" : "Adjusted");
-      assert.equal(hex(await applied.locator("i").evaluate((element) => getComputedStyle(element).backgroundColor)), expected.colors[key]);
-      assert.ok((await page.locator(`#${key}`).getAttribute("aria-describedby")).includes(`${key}-applied`));
-    }
-    assert.equal(await page.locator("#live-preview").getAttribute("data-usable"), String(expected.usable));
-    assert.equal(await page.locator("#checks-result").textContent(), `${Object.entries(expected.meetsTarget).filter(([key, pass]) => key !== "seriesDistinct" && pass).length} / 11 pass`);
-    await choosePanel("measurements");
-    const checks = await page.locator("#measurements-body tr").evaluateAll((rows) => rows.map((row) => ({ key: row.dataset.check, value: Number(row.dataset.value), target: Number(row.dataset.target), pass: row.dataset.pass === "true" })));
-    assert.equal(checks.length, 11);
-    for (const check of checks) {
-      assert.equal(check.pass, expected.meetsTarget[check.key]);
-      assert.equal(check.value, expected.metrics[`${check.key}Contrast`]);
-      const targetKey = check.key === "text" ? "textContrast" : check.key === "muted" ? "mutedContrast" : check.key.startsWith("series") ? "accentContrast" : "surfaceTextContrast";
-      assert.equal(check.target, expected.targets[targetKey]);
-    }
-    for (const adjustment of expected.adjustments) assert.ok((await page.locator("#adjustment-log").textContent()).includes(adjustment.message));
-    for (const warning of expected.warnings) assert.ok((await page.locator("#warning-log").textContent()).includes(warning));
-    for (const pair of ["AB", "AC", "BC"]) {
-      const label = await page.locator(`[data-pair=${pair}]`).textContent();
-      assert.ok(label.includes(expected.metrics[`series${pair}Distance`].toFixed(2)));
-      assert.ok(label.includes(expected.metrics[`series${pair}PerceptualDistance`].toFixed(4)));
-    }
-    return expected;
+  async function applyAnalytics(background) {
+    await page.locator("#analytics-picker").evaluate((element, value) => {
+      element.value = value; element.dispatchEvent(new Event("input", { bubbles: true }));
+    }, background);
+    return page.evaluate(async ({ source, background, options }) => (await import(source)).createContrastFit(background, options),
+      { source: `${base}src/contrast-fit.js`, background, options: defaults });
   }
   async function verifyChart(expected) {
-    // Explicitly configure the independent Analytics palette through the single
-    // inspector. Ordinary project edits must never silently recolor this example.
-    const output = await json();
-    const disclosure = await page.locator("#target-controls,#accent-controls").evaluateAll((es) => es.map(e => e.open));
-    await page.locator("#inspect-example").selectOption("analytics");
-    for (const id of ["target-controls", "accent-controls"]) await page.locator(`#${id}`).evaluate(e => { e.open = true; });
-    await page.locator(`[name=strategy][value=${output.options.backgroundStrategy}]`).check();
-    await fill("background", output.inputBackground);
-    for (const key of ["textContrast", "mutedContrast", "accentContrast", "surfaceTextContrast"]) await fill(key, String(output.options[key]));
-    for (const key of ["seriesA", "seriesB", "seriesC"]) await fill(key, output.options.accents[key]);
-    await page.locator("#inspect-example").selectOption("interface");
-    for (const [index, id] of ["target-controls", "accent-controls"].entries()) await page.locator(`#${id}`).evaluate((e, open) => { e.open = open; }, disclosure[index]);
     for (const name of ["interface", "commerce", "reading", "analytics"]) assert.equal(await page.locator(`#scene-${name}`).isVisible(), true);
     const chart = await page.locator("#chart").evaluate((element) => ({
       series: [...element.querySelectorAll("[data-chart-series]")].map((group) => ({
@@ -187,7 +104,7 @@ try {
     }
   }
   async function verifyRenderedSeries(expected, label) {
-    await verifyChart(expected); await choosePanel("measurements");
+    await verifyChart(expected);
     await page.evaluate(() => window.scrollTo(0, 0));
     const samples = await page.evaluate(() => {
       const svg = document.querySelector("#chart");
@@ -230,7 +147,8 @@ try {
         const context = canvas.getContext("2d"); context.drawImage(image, 0, 0); return context;
       }
       const [front, back] = await Promise.all([decode(foreground), decode(backdrop)]);
-      const at = (context, point) => [...context.getImageData(Math.round(point.x), Math.round(point.y), 1, 1).data];
+      // Sample the pixel containing the SVG center, not its rounded neighbor.
+      const at = (context, point) => [...context.getImageData(Math.floor(point.x), Math.floor(point.y), 1, 1).data];
       const around = (context, point) => [...context.getImageData(Math.round(point.x) - 1, Math.round(point.y) - 1, 3, 3).data].reduce((colors, _, i, all) => i % 4 ? colors : [...colors, all.slice(i, i + 4)], []);
       return { series: samples.series.map((series) => ({ key: series.key, backingOrder: series.backingOrder,
         markers: series.markers.map((point) => ({ foreground: at(front, point), background: at(back, point) })),
@@ -273,227 +191,19 @@ try {
       series: pixels.series.map((series) => ({ key: series.key, ...series.markers[0], ratio: renderedRatio(series.markers[0].foreground, series.markers[0].background) })) });
     console.log(`PASS Studio raster: ${label}, 18 markers + all 3 lines/legends + ${crossings} grid intersections preserve actual ${expected.targets.accentContrast}:1 target`);
   }
-  async function verifyComparison(expected) {
-    await choosePanel("compare");
-    assert.equal(await page.locator("#live-preview").isVisible(), true);
-    const baseline = { text: "#FFFFFF", muted: "#A1A1AA", seriesA: "#18B7A6" };
-    for (const name of ["baseline", "fitted"]) for (const key of ["text", "muted", "seriesA"]) {
-      const color = name === "baseline" ? baseline[key] : expected.colors[key];
-      const bg = name === "baseline" ? expected.inputBackground : expected.background;
-      const result = page.locator(`#${name}-ratios [data-comparison=${key}]`);
-      assert.ok(Math.abs(Number(await result.getAttribute("data-ratio")) - contrastRatio(parseHex(color), parseHex(bg))) < 1e-10);
-      assert.equal(await page.locator(`#${name}-preview rect`).getAttribute("fill"), bg);
-    }
-    assert.match(await page.locator("#scene-compare").textContent(), /Baseline: text #FFFFFF/);
-  }
-  await fill("background", "#777777");
-  const initial = await verifyEngine("#777777");
-  await choosePanel("tokens");
-  const tokens = await page.locator("[data-token-index]").evaluateAll((items) => items.map((item) => ({ name: item.querySelector("strong").textContent, value: item.querySelector("small").textContent })));
-  assert.equal(tokens.length, 17);
-  tokens.forEach((token, index) => { assert.equal(token.name, initial.tokens[index].name); assert.equal(token.value, initial.tokens[index].css); });
-  for (const index of [3, 4, 14, 16]) {
-    await page.locator(`[data-token-index='${index}']`).click();
-    const detail = await page.locator("#token-detail").textContent();
-    assert.ok(detail.includes(initial.tokens[index].effectiveColor)); assert.ok(detail.includes(`${initial.tokens[index].color} / ${initial.tokens[index].alpha}`));
-  }
-  await page.locator("[data-token-index='4']").focus(); await page.keyboard.press("Enter");
-  for (const background of ["#204060", "#777777"]) {
-    await page.locator("#background-picker").evaluate((element, value) => { element.value = value; element.dispatchEvent(new Event("input", { bubbles: true })); }, background);
-    assert.equal(await page.evaluate(() => document.activeElement?.dataset.tokenIndex), "4", "palette rerender preserves a focused token button");
-    assert.match(await page.locator("#token-detail").textContent(), /CSS variable--contrast-fit-panel/);
-  }
-  await axeCheck("default interface + token explorer");
-  await verifyChart(initial); await page.locator(".sample-data summary").click(); await axeCheck("analytics with expanded equivalent data");
-  await verifyRenderedSeries(initial, "default-midgray");
-  await verifyComparison(initial); await axeCheck("measured naive/fitted image comparison");
-  await choosePanel("tokens");
-
-  // Invalid drafts are kept for correction; the palette and the complete export remain unchanged.
-  const previous = await json();
-  await page.locator("#background").fill("#12XZ");
-  assert.equal(await page.locator("#background").getAttribute("aria-invalid"), "true");
-  await page.locator("#background").press("Tab");
-  assert.equal(await page.locator("#background").inputValue(), "#12XZ");
-  assert.deepEqual(await json(), previous);
-  await page.locator("#background").press("Escape"); assert.equal(await page.locator("#background").inputValue(), "#777777");
-  await page.locator("#background").fill(""); await page.locator("#background").pressSequentially("#abcdef");
-  assert.equal(await page.locator("#background").inputValue(), "#abcdef", "six-digit typing is not rewritten after a valid shorthand preview");
-  await page.locator("#background").press("Enter"); assert.equal(await page.locator("#background").inputValue(), "#ABCDEF");
-  await fill("background", " #f0a "); assert.equal(await page.locator("#background").inputValue(), "#FF00AA");
-  await verifyEngine("#FF00AA");
-  await page.locator("#background-picker").evaluate((element) => { element.value = "#204060"; element.dispatchEvent(new Event("input", { bubbles: true })); });
-  await verifyEngine("#204060");
-  for (const color of ["#000000", "#FFFFFF", "#FF00FF", "#FFFF00", "#090D12", "#777777"]) {
-    await fill("background", color); await verifyEngine(color);
-  }
-  await page.locator("[name=strategy][value=preserve]").check();
-  let options = structuredClone(defaults); options.backgroundStrategy = "preserve";
-  const preserved = await verifyEngine("#777777", options);
-  assert.equal(preserved.background, "#777777"); assert.equal(preserved.usable, false); assert.ok(preserved.warnings.length);
-  assert.match(await page.locator("#result-status").textContent(), /Targets unresolved/);
-  await axeCheck("preserved mid-gray with unresolved requested target");
-  await page.locator("#target-controls").evaluate(e => { e.open = true; });
-  for (const [key, value] of [["textContrast", "12"], ["mutedContrast", "7"], ["accentContrast", "5"], ["surfaceTextContrast", "6"]]) {
-    await fill(key, value); options[key] = Number(value);
-  }
-  await verifyEngine("#777777", options);
-  const validTargets = await json(); await fill("textContrast", "22");
-  assert.equal(await page.locator("#textContrast").getAttribute("aria-invalid"), "true"); assert.deepEqual(await json(), validTargets);
-  await page.locator("#textContrast").press("Escape");
-  await page.locator("[name=strategy][value=auto]").check(); options.backgroundStrategy = "auto";
-  await verifyEngine("#777777", options);
-  await page.locator("#extreme-targets").click();
-  for (const key of ["textContrast", "mutedContrast", "accentContrast", "surfaceTextContrast"]) options[key] = 21;
-  const extreme = await verifyEngine("#777777", options);
-  assert.equal(extreme.usable, true); assert.equal(extreme.meetsTarget.seriesDistinct, false);
-  assert.ok(extreme.adjustments.some(({ type }) => type === "series-encoding"));
-  await verifyRenderedSeries(extreme, "all-targets-21"); await choosePanel("measurements"); await axeCheck("21:1 numeric pass with honest series collapse");
-  await choosePanel("tokens");
-  for (const [index, suffix] of [[10, "series-a"], [11, "series-b"], [12, "series-c"]]) {
-    await page.locator(`[data-token-index='${index}']`).click();
-    assert.ok((await page.locator("#token-detail").textContent()).includes(`--contrast-fit-${suffix}`), "collapsed colors retain semantic token identities");
-  }
-  async function independentTargetCase(background, changes = {}) {
-    await page.locator("#reset").click(); await fill("background", "#777777");
-    for (const id of ["target-controls", "accent-controls"]) await page.locator(`#${id}`).evaluate((element) => { element.open = true; });
-    await fill("background", background);
-    const next = structuredClone(defaults);
-    for (const [key, value] of Object.entries(changes)) { await fill(key, String(value)); next[key] = value; }
-    return { next, result: await verifyEngine(background, next) };
-  }
-  let focused = await independentTargetCase("#777777", { textContrast: 12 });
-  assert.equal(focused.result.background, "#363636");
-  assert.ok(Math.abs(focused.result.metrics.textContrast - 12.08432088306438) < 1e-10);
-  focused = await independentTargetCase("#2B3548", { textContrast: 1, mutedContrast: 1, accentContrast: 1, surfaceTextContrast: 12 });
-  assert.equal(focused.result.background, "#2B3548"); assert.equal(focused.result.colors.text, "#FDFDFD");
-  assert.equal(focused.result.alphas.panel, 0.02); assert.equal(focused.result.alphas.metric, 0.03);
-  focused = await independentTargetCase("#2B3548", { accentContrast: 21 });
-  assert.equal(focused.result.background, "#000000"); assert.equal(focused.result.targets.mutedContrast, 4.7);
-  assert.ok(Math.abs(focused.result.metrics.mutedContrast - 4.756415446013557) < 1e-10);
-  assert.equal(focused.result.meetsTarget.seriesDistinct, false);
-  await verifyRenderedSeries(focused.result, "accent-only-21");
-  focused = await independentTargetCase("#000000", { surfaceTextContrast: 10 });
-  assert.equal(focused.result.colors.goodText, "#C2F9E2"); assert.equal(focused.result.colors.warnText, "#FFF3DC");
-  focused = await independentTargetCase("#000000", { surfaceTextContrast: 21 });
-  for (const key of ["goodBg", "warnBg"]) assert.equal(focused.result.colors[key], "#000000");
-  for (const key of ["goodText", "warnText"]) assert.equal(focused.result.colors[key], "#FFFFFF");
-  focused = await independentTargetCase("#777777", { textContrast: 4.69, mutedContrast: 1, surfaceTextContrast: 1 });
-  await page.locator("[name=strategy][value=preserve]").check(); focused.next.backgroundStrategy = "preserve";
-  const roundedFailure = await verifyEngine("#777777", focused.next);
-  assert.ok(roundedFailure.metrics.textContrast < 4.69); assert.equal(roundedFailure.meetsTarget.text, false);
-  assert.match(await page.locator('[data-check="text"]').textContent(), /4.69:14.69:1Fail/);
-  await independentTargetCase("#777777");
-  await page.locator("#background").fill("#12XZ"); await fill("textContrast", "12");
-  let transactional = { ...structuredClone(defaults), textContrast: 12 };
-  await verifyEngine("#777777", transactional);
-  assert.equal(await page.locator("#background").inputValue(), "#12XZ");
-  await page.locator("#seriesB").fill("nothex"); await fill("mutedContrast", "7"); transactional.mutedContrast = 7;
-  await verifyEngine("#777777", transactional);
-  assert.equal(await page.locator("#seriesB").inputValue(), "nothex", "unrelated valid changes retain invalid drafts and last-valid applied seeds");
-  await choosePanel("export"); await fill("prefix", "report_ui"); await page.locator("#prefix").fill("bad prefix;");
-  await page.locator("[name=strategy][value=preserve]").check(); transactional.backgroundStrategy = "preserve";
-  await verifyEngine("#777777", transactional, "report_ui");
-  assert.equal(await page.locator("#prefix").inputValue(), "bad prefix;");
-  assert.equal(await page.locator("#prefix").getAttribute("aria-invalid"), "true");
-  await independentTargetCase("#000000"); await page.locator("#same-seeds").click();
-  const identicalOptions = structuredClone(defaults);
-  for (const key of ["seriesA", "seriesB", "seriesC"]) identicalOptions.accents[key] = "#18B7A6";
-  // Floating-point tie ordering can differ across Node and Chromium in this existing
-  // engine case. Compare exact per-series UI output to the actual browser engine;
-  // independently retain the expected color set, distinctness and unchanged source tests.
-  const identicalBlack = await verifyEngine("#000000", identicalOptions, "contrast-fit", true);
-  assert.deepEqual(["seriesA", "seriesB", "seriesC"].map((key) => identicalBlack.colors[key]).sort(), ["#18B7A6", "#7635DB", "#B54708"].sort());
-  assert.equal(identicalBlack.meetsTarget.seriesDistinct, true); assert.deepEqual(identicalBlack.adjustments, []);
-  assert.match(await page.locator("#adjustment-log").textContent(), /No recorded/);
-  const browserRuns = await page.evaluate(async ({ options, source }) => {
-    const { createContrastFit } = await import(source); return [1, 2, 3].map(() => createContrastFit("#000000", options));
-  }, { options: identicalOptions, source: `${base}src/contrast-fit.js` });
-  for (const result of browserRuns) assert.deepEqual(result, identicalBlack);
-  await choosePanel("tokens"); await axeCheck("expanded seeds with adjacent applied colors");
-  if (screenshotDir) await page.locator("#accent-controls").screenshot({ path: resolve(screenshotDir, "studio-seed-results-identical-black.png") });
-  console.log("PASS Studio independent targets: primary12 gray, surface12 slate + low alpha, accent-only21, black status10/21, identical-black exact browser engine and expected color set");
-  await page.locator("#reset").click(); await fill("background", "#777777"); options = structuredClone(defaults);
-  await page.locator("#accent-controls").evaluate((element) => { element.open = true; });
-  await page.locator("#same-seeds").click();
-  for (const key of ["seriesA", "seriesB", "seriesC"]) options.accents[key] = "#18B7A6";
-  await verifyEngine("#777777", options);
-  for (const [key, seed] of [["seriesA", "#f00"], ["seriesB", "#ff0101"], ["seriesC", "#ff0202"]]) {
-    await fill(key, seed); options.accents[key] = key === "seriesA" ? "#FF0000" : seed.toUpperCase();
-  }
-  const custom = await verifyEngine("#777777", options); await verifyChart(custom);
-  const validSeeds = await json(); await fill("seriesB", "rebeccapurple"); assert.deepEqual(await json(), validSeeds);
-  assert.equal(await page.locator("#seriesB").getAttribute("aria-invalid"), "true"); await page.locator("#seriesB").press("Escape");
-  console.log("PASS Studio engine: auto/preserve, six presets and extremes, all target controls, 21:1, custom/similar/identical seeds, warnings, separation and exact returned encodings");
-
-  await choosePanel("export"); await fill("prefix", "report_ui");
-  await verifyEngine("#777777", options, "report_ui");
-  await choosePanel("tokens"); await page.locator("[data-token-index='16']").click();
-  assert.ok((await page.locator("#token-detail").textContent()).includes("--contrast-fit-warn-text"), "custom prefix changes exports, not internal token metadata");
-  await choosePanel("export");
-  await chooseFormat("css"); const css = await page.locator("#export-output").textContent();
-  assert.equal(css, `.contrast-fit-preview {\n${Object.entries(paletteToCssVariables(custom, "report_ui")).map(([key, value]) => `  ${key}: ${value};`).join("\n")}\n}\n`);
-  await fill("prefix", "bad prefix;"); assert.equal(await page.locator("#prefix").getAttribute("aria-invalid"), "true"); assert.equal(await page.locator("#export-output").textContent(), css); await page.locator("#prefix").press("Escape");
-  await chooseFormat("js"); const js = await page.locator("#export-output").textContent();
-  assert.ok(js.includes(JSON.stringify(options, null, 2))); assert.ok(js.includes(`Resolved background with v0.1.0: ${custom.background}`));
-  const runnable = js.replace('from "contrast-fit"', `from ${JSON.stringify(`${base}src/contrast-fit.js`)}`);
-  const execution = await page.evaluate(async (source) => {
-    const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
-    await import(url); URL.revokeObjectURL(url);
-    const element = document.body.lastElementChild;
-    const result = { background: getComputedStyle(element).backgroundColor, text: getComputedStyle(element).color, variable: element.style.getPropertyValue("--report_ui-bg") };
-    element.remove(); return result;
-  }, runnable);
-  assert.equal(hex(execution.background), custom.background); assert.equal(hex(execution.text), custom.colors.text); assert.equal(execution.variable, custom.background);
-  // Exercise modern copy, denied-API fallback, and completely unavailable clipboard.
-  await page.evaluate(() => { Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (value) => { window.copiedStudio = value; } } }); });
-  await page.locator("#copy").click(); assert.equal(await page.evaluate(() => window.copiedStudio), js); assert.match(await page.locator("#export-status").textContent(), /Copied JavaScript/);
-  await page.evaluate(() => { navigator.clipboard.writeText = async () => { throw new Error("denied"); }; document.execCommand = () => { window.fallbackStudio = document.querySelector("textarea").value; return true; }; });
-  await page.locator("#copy").click(); assert.equal(await page.evaluate(() => window.fallbackStudio), js); assert.match(await page.locator("#export-status").textContent(), /Copied JavaScript/);
-  await page.evaluate(() => { document.execCommand = () => false; }); await page.locator("#copy").click();
-  assert.match(await page.locator("#export-status").textContent(), /Clipboard unavailable/); assert.equal((await page.evaluate(() => getSelection().toString())).trimEnd(), js.trimEnd(), "manual selection contains all code; browser selection may omit the final line break");
-  await chooseFormat("json"); const expectedDownload = await page.locator("#export-output").textContent();
-  const downloadPromise = page.waitForEvent("download"); await page.locator("#download").click(); const download = await downloadPromise;
-  assert.equal(download.suggestedFilename(), "contrast-fit-palette.json"); assert.equal(await readFile(await download.path(), "utf8"), expectedDownload);
-  await axeCheck("exports with custom prefix, copy and download status");
-  console.log("PASS Studio exports: exact 17-variable CSS, full JSON, runnable current-options JS and self-contained DOM consumption, prefix/metadata, modern/fallback/manual copy, downloaded bytes");
-
-  await page.locator("#reset").click(); await fill("background", "#777777"); await choosePanel("tokens"); await choosePanel("tokens");
-  // Native radio keyboard handling and visible focus; no custom roving-tab trap.
-  await page.locator("[name=strategy][value=auto]").focus(); await page.keyboard.press("ArrowRight");
-  assert.equal(await page.locator("[name=strategy][value=preserve]").isChecked(), true);
-  await page.keyboard.press("ArrowLeft"); assert.equal(await page.locator("[name=strategy][value=auto]").isChecked(), true);
-  await page.locator("#background").focus(); await page.keyboard.press("Tab");
-  assert.equal(await page.locator("[data-preset]").first().evaluate((element) => element === document.activeElement && element.matches(":focus-visible") && parseFloat(getComputedStyle(element).outlineWidth) >= 2), true);
-  await page.keyboard.press("Enter");
-  const ids = await page.locator("[id]").evaluateAll((items) => items.map((item) => item.id)); assert.equal(new Set(ids).size, ids.length);
-  for (const width of [320, 375, 768, 1280, 1440]) {
-    await page.setViewportSize({ width, height: 900 });
-    for (const name of ["interface", "commerce", "reading", "analytics"]) assert.equal(await page.locator(`#scene-${name}`).isVisible(), true, "all four remain rendered regardless of inspector view");
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${width}px: no horizontal page overflow`);
-    if (width <= 768) {
-      const scroll = page.locator(".chart-scroll"); await scroll.focus(); await page.keyboard.press("ArrowRight");
-      await page.waitForFunction(() => document.querySelector(".chart-scroll").scrollLeft > 0);
-      assert.equal(await page.evaluate(() => scrollX), 0);
-      assert.equal(await scroll.evaluate((element) => element.matches(":focus-visible") && parseFloat(getComputedStyle(element).outlineWidth) >= 2), true);
-    }
-    const minText = await page.locator("#chart text").evaluateAll((items) => Math.min(...items.map((item) => parseFloat(getComputedStyle(item).fontSize) * Math.hypot(item.getScreenCTM().a, item.getScreenCTM().b))));
-    assert.ok(minText >= 10, `${width}px: chart tick labels remain readable`);
-    await choosePanel("export"); await chooseFormat("js");
-    const code = page.locator("#export-code"); await page.locator("#download").focus();
-    await page.keyboard.press("Tab");
-    assert.equal(await code.evaluate(e => e === document.activeElement), true, "export is naturally keyboard reachable after Download");
-    const codeOverflows = await code.evaluate((element) => element.scrollWidth > element.clientWidth);
-    if (width <= 375) assert.equal(codeOverflows, true);
-    if (codeOverflows) { await code.evaluate(e => { e.scrollLeft = 0; }); await page.keyboard.press("ArrowRight"); await page.waitForFunction(() => document.querySelector("#export-code").scrollLeft > 0); }
-    assert.equal(await code.evaluate((element) => element.matches(":focus-visible") && parseFloat(getComputedStyle(element).outlineWidth) >= 2), true);
-    if (width === 320) await axeCheck("320px all-visible gallery + export");
+  for (const [label, background] of [["default-midnight", "#101D29"], ["default-midgray", "#777777"], ["default-paper", "#F1F5FA"], ["default-black", "#000000"], ["default-magenta", "#FF00FF"], ["default-yellow", "#FFFF00"]]) {
+    const expected = await applyAnalytics(background);
+    // The production renderer has no configurable targets: strict option/API cases
+    // remain in core/package contracts, not a fabricated reachable demo workflow.
+    assert.equal(expected.targets.accentContrast, 3.3);
+    assert.equal(expected.background, createContrastFit(background).background);
+    await verifyRenderedSeries(expected, label);
   }
   await verifyScenarios({ page, base, screenshotDir, axeCheck, renderedRatio });
   const links = await page.locator('a[href="../dashboard/"], a[href="../../docs/"]').evaluateAll((items) => items.map((item) => item.href));
   for (const url of links) assert.equal((await context.request.get(url)).status(), 200, "project-subpath docs/legacy route works");
   assert.deepEqual(errors, [], `No console, network, or page errors: ${JSON.stringify(errors)}`);
-  console.log(`PASS Studio: root/project-subpath routing, keyboard, 320/375/768px fit, local chart/code scrolling, accessible descriptions; Chromium ${browser.version()}`);
+  console.log(`PASS Studio: root/project-subpath routing, keyboard, 320/375/768px fit, local chart scrolling, accessible descriptions; Chromium ${browser.version()}`);
   if (screenshotDir) { await writeFile(resolve(screenshotDir, "studio-rendered-contrast.json"), JSON.stringify(pixelReports, null, 2) + "\n"); console.log(`Screenshots and actual rendered contrast: ${screenshotDir}`); }
 } finally {
   await browser?.close();
